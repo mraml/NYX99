@@ -1,0 +1,53 @@
+# Weather patterns, their effects, and their spawn weight
+# 'temp' and 'light' are modifiers applied on top of the time-of-day baseline.
+weather_patterns:
+  Clear:
+    mood: 'neutral'
+    temp: 0
+    light: 0
+    weight: 20
+  Sunny:
+    mood: 'positive'
+    temp: 2
+    light: 0.2
+    weight: 15
+  Partly Cloudy:
+    mood: 'neutral'
+    temp: -1
+    light: -0.1
+    weight: 20
+  Overcast:
+    mood: 'gloomy'
+    temp: -2
+    light: -0.3
+    weight: 15
+  Drizzle:
+    mood: 'gloomy'
+    temp: -2
+    light: -0.3
+    weight: 10
+  Rain:
+    mood: 'negative'
+    temp: -3
+    light: -0.4
+    weight: 5
+  Thunderstorm:
+    mood: 'negative'
+    temp: -4
+    light: -0.6
+    weight: 3
+  Fog:
+    mood: 'mysterious'
+    temp: -1
+    light: -0.2
+    weight: 5
+  Muggy:
+    mood: 'uncomfortable'
+    temp: 4  # Hot and humid
+    light: -0.1 # Hazy
+    weight: 3
+  Frigid:
+    mood: 'uncomfortable'
+    temp: -8 # Bitter cold
+    light: 0.1 # Cold but clear
+    weight: 2

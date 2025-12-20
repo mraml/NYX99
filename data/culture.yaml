@@ -1,0 +1,139 @@
+# ============================================================================
+# SOCIAL DATA (Topics, Gossip) & SLANG
+# ============================================================================
+conversation_topics:
+  # 1999 Current Events
+  - { topic: 'Y2K', interest_tags: ['technology', 'politics'], relevance: 'very_high' }
+  - { topic: 'the Dot-com bubble', interest_tags: ['finance', 'technology', 'politics'], relevance: 'very_high' }
+  - { topic: 'the new Star Wars prequel', interest_tags: ['movies', 'comics'], relevance: 'very_high' }
+  - { topic: 'The Matrix', interest_tags: ['movies', 'technology'], relevance: 'very_high' }
+  - { topic: 'who killed JFK Jr.', interest_tags: ['politics'], relevance: 'high' }
+  - { topic: "Bill Clinton's impeachment", interest_tags: ['politics'], relevance: 'high' }
+  - { topic: 'Columbine shooting', interest_tags: ['politics', 'news'], relevance: 'high' }
+  - { topic: 'Kosovo War', interest_tags: ['politics', 'news'], relevance: 'medium' }
+  - { topic: 'Euro currency launch', interest_tags: ['finance', 'politics'], relevance: 'medium' }
+  
+  # Technology
+  - { topic: 'their new pager', interest_tags: ['technology'], relevance: 'high' }
+  - { topic: 'Napster', interest_tags: ['music', 'technology'], relevance: 'very_high' }
+  - { topic: 'getting AOL', interest_tags: ['technology'], relevance: 'high' }
+  - { topic: 'MP3 players', interest_tags: ['technology', 'music'], relevance: 'medium' }
+  - { topic: 'Internet stocks', interest_tags: ['finance', 'technology'], relevance: 'very_high' }
+  - { topic: 'how slow dial-up is', interest_tags: ['technology'], relevance: 'high' }
+  - { topic: 'DVD vs VHS', interest_tags: ['technology', 'movies'], relevance: 'medium' }
+  
+  # Pop Culture
+  - { topic: 'Britney Spears', interest_tags: ['music'], relevance: 'very_high' }
+  - { topic: 'The Sopranos', interest_tags: ['tv'], relevance: 'very_high' }
+  - { topic: 'Sex and the City', interest_tags: ['tv', 'fashion'], relevance: 'high' }
+  - { topic: 'who shot Mr. Burns', interest_tags: ['tv'], relevance: 'medium' }
+  - { topic: 'Seinfeld finale', interest_tags: ['tv'], relevance: 'medium' }
+  - { topic: 'WWE wrestling', interest_tags: ['sports', 'tv'], relevance: 'high' }
+  - { topic: 'Eminem controversy', interest_tags: ['music', 'politics'], relevance: 'high' }
+  - { topic: 'boy bands vs real music', interest_tags: ['music'], relevance: 'high' }
+  
+  # Sports
+  - { topic: 'the Knicks game', interest_tags: ['sports'], relevance: 'high' }
+  - { topic: 'the Yankees dynasty', interest_tags: ['sports'], relevance: 'very_high' }
+  - { topic: 'Mets playoff run', interest_tags: ['sports'], relevance: 'medium' }
+  - { topic: 'Rangers season', interest_tags: ['sports'], relevance: 'medium' }
+  
+  # Local/Daily Life
+  - { topic: 'the stock market', interest_tags: ['finance'], relevance: 'high' }
+  - { topic: 'a new restaurant', interest_tags: ['food'], relevance: 'medium' }
+  - { topic: 'the weather', interest_tags: ['small_talk'], relevance: 'very_high' }
+  - { topic: 'their job', interest_tags: ['work', 'small_talk'], relevance: 'very_high' }
+  - { topic: 'rent prices', interest_tags: ['finance', 'small_talk'], relevance: 'very_high' }
+  - { topic: 'the subway', interest_tags: ['small_talk'], relevance: 'very_high' }
+  - { topic: "Giuliani's policies", interest_tags: ['politics'], relevance: 'high' }
+  - { topic: 'gentrification', interest_tags: ['politics', 'real_estate'], relevance: 'high' }
+  - { topic: 'Times Square cleanup', interest_tags: ['politics', 'local'], relevance: 'medium' }
+  
+  # Misc Cultural
+  - { topic: 'their Tamagotchi', interest_tags: ['games'], relevance: 'medium' }
+  - { topic: 'Beanie Babies values', interest_tags: ['collecting'], relevance: 'low' }
+  - { topic: 'Pokemon craze', interest_tags: ['games', 'kids'], relevance: 'medium' }
+  - { topic: 'The Blair Witch Project', interest_tags: ['movies'], relevance: 'high' }
+  - { topic: 'Fight Club ending', interest_tags: ['movies'], relevance: 'high' }
+  - { topic: "Woodstock '99 riots", interest_tags: ['music', 'news'], relevance: 'medium' }
+
+gossip_templates:
+  - "Did you hear that {SUBJECT_NAME} {GOSSIP_VERB}?"
+  - "I heard {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}!"
+  - "Can you believe {SUBJECT_NAME} {GOSSIP_VERB}?"
+  - "Everyone is saying that {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}..."
+  - "Honestly, I think {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}."
+  - "Don't tell anyone, but {SUBJECT_NAME} {GOSSIP_VERB}!"
+  - "Apparently {SUBJECT_NAME} was seen {GOSSIP_VERB}."
+  - "So I heard through the grapevine that {SUBJECT_NAME} {GOSSIP_VERB}."
+  - "You didn't hear this from me, but {SUBJECT_NAME} {GOSSIP_VERB}."
+  - "Word on the street is {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}."
+
+gossip_verbs:
+  - "cheating on their partner"
+  - "getting fired soon"
+  - "secretly rich"
+  - "lying about their job"
+  - "moving to another city"
+  - "going to rehab"
+  - "getting divorced"
+  - "having an affair with a coworker"
+  - "got arrested last week"
+  - "won the lottery"
+  - "lost all their money in stocks"
+  - "sleeping with their boss"
+  - "getting evicted"
+  - "in huge debt"
+  - "going back to school"
+  - "starting their own company"
+  - "got someone pregnant"
+  - "dealing drugs"
+  - "went to the same party as a celebrity"
+  - "hooking up with their ex again"
+
+gossip_adjectives:
+  - "a total fraud"
+  - "really nice, actually"
+  - "kind of a jerk"
+  - "secretly dating the boss"
+  - "in a lot of trouble"
+  - "about to get promoted"
+  - "moving to LA"
+  - "broke as hell"
+  - "secretly loaded"
+  - "having a mental breakdown"
+  - "getting back with their ex"
+  - "seeing someone new"
+  - "up to something shady"
+  - "doing really well these days"
+  - "spiraling out of control"
+
+# ============================================================================
+# SLANG & SPEECH PATTERNS (1999)
+# ============================================================================
+common_slang_1999:
+  - 'all that and a bag of chips'
+  - 'as if!'
+  - 'boo-yah!'
+  - 'da bomb'
+  - 'duh'
+  - 'fly'
+  - 'gag me with a spoon'
+  - 'get jiggy with it'
+  - 'hella'
+  - 'home skillet'
+  - 'hot'
+  - 'my bad'
+  - 'not!'
+  - 'off the hook'
+  - 'phat'
+  - 'playa'
+  - 'props'
+  - 'psych!'
+  - 'radical'
+  - 'sweet'
+  - 'talk to the hand'
+  - 'tight'
+  - 'wassup'
+  - 'wack'
+  - 'whatever'

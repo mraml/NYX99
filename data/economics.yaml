@@ -1,0 +1,55 @@
+# ============================================================================
+# PRICES & ECONOMICS (1999 NYC)
+# ============================================================================
+typical_prices:
+  # Food & Drink
+  - { item: 'Dollar pizza slice', price: 1.00 }
+  - { item: 'Pizza slice (regular)', price: [1.50, 2.50] }
+  - { item: 'Hot dog from cart', price: 1.50 }
+  - { item: 'Coffee (deli)', price: [0.75, 1.25] }
+  - { item: 'Coffee (Starbucks)', price: [2.50, 4.00] }
+  - { item: 'Bagel with cream cheese', price: [1.50, 2.50] }
+  - { item: 'Deli sandwich', price: [4.00, 6.00] }
+  - { item: 'Diner breakfast', price: [5.00, 8.00] }
+  - { item: 'Fast food meal', price: [4.00, 6.00] }
+  - { item: 'Casual restaurant meal', price: [12.00, 25.00] }
+  - { item: 'Nice restaurant dinner', price: [40.00, 80.00] }
+  - { item: 'Beer at bar', price: [3.00, 5.00] }
+  - { item: 'Well drink', price: [4.00, 6.00] }
+  - { item: 'Cocktail (nice place)', price: [8.00, 12.00] }
+  
+  # Entertainment
+  - { item: 'Movie ticket', price: [8.50, 10.00] }
+  - { item: 'Video rental', price: [3.00, 4.00] }
+  - { item: 'CD', price: [12.99, 16.99] }
+  - { item: 'Concert ticket (club)', price: [10.00, 25.00] }
+  - { item: 'Concert ticket (arena)', price: [40.00, 100.00] }
+  - { item: 'Broadway show', price: [60.00, 100.00] }
+  - { item: 'Museum admission', price: [8.00, 12.00] }
+  - { item: 'Comic book', price: [1.99, 2.99] }
+  - { item: 'Paperback book', price: [6.99, 9.99] }
+  - { item: 'Magazine', price: [3.50, 5.00] }
+  
+  # Transportation
+  - { item: 'Subway token', price: 1.50 }
+  - { item: 'Taxi ride (short)', price: [5.00, 10.00] }
+  - { item: 'Taxi ride (long)', price: [15.00, 30.00] }
+  
+  # Services
+  - { item: 'Haircut (basic)', price: [10.00, 25.00] }
+  - { item: 'Haircut (nice salon)', price: [40.00, 80.00] }
+  - { item: 'Gym membership (monthly)', price: [40.00, 80.00] }
+  - { item: 'Internet cafe (per hour)', price: [5.00, 10.00] }
+  - { item: 'Laundromat (per load)', price: [1.50, 2.50] }
+  
+  # Technology
+  - { item: 'Pager', price: [50.00, 100.00] }
+  - { item: 'Cell phone', price: [100.00, 300.00] }
+  - { item: 'Desktop computer', price: [1000.00, 2500.00] }
+  - { item: 'Laptop computer', price: [1500.00, 3000.00] }
+  - { item: 'VCR', price: [100.00, 200.00] }
+  - { item: 'DVD player', price: [300.00, 500.00] }
+  - { item: 'PlayStation', price: 99.00 }
+  - { item: 'Nintendo 64', price: 99.00 }
+  - { item: 'Video game', price: [39.99, 49.99] }
+  - { item: 'Discman', price: [50.00, 150.00] }

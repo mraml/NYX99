@@ -1,0 +1,147 @@
+# ============================================================================
+# WEATHER, TIME, & SENSORY DETAILS
+# ============================================================================
+weather_conditions:
+  - { weather: 'Clear and sunny', mood: 'uplifting', weight: 0.20 }
+  - { weather: 'Partly cloudy', mood: 'neutral', weight: 0.25 }
+  - { weather: 'Overcast', mood: 'gloomy', weight: 0.15 }
+  - { weather: 'Light rain', mood: 'cozy', weight: 0.12 }
+  - { weather: 'Heavy rain', mood: 'dreary', weight: 0.08 }
+  - { weather: 'Drizzle', mood: 'melancholy', weight: 0.10 }
+  - { weather: 'Fog', mood: 'mysterious', weight: 0.05 }
+  - { weather: 'Snow', mood: 'peaceful', weight: 0.03 }
+  - { weather: 'Hot and humid', mood: 'oppressive', weight: 0.02 }
+
+time_of_day_atmosphere:
+  early_morning: # 5am-8am
+    description: 'Streets quiet, early risers heading to work, bakeries opening, dim light'
+    activities_more_likely: ['commuting to work', 'getting coffee', 'eating breakfast', 'working out']
+  
+  morning: # 8am-12pm
+    description: 'City in full swing, rush hour crowds, office buildings busy, bright daylight'
+    activities_more_likely: ['working', 'shopping', 'running errands', 'getting coffee']
+  
+  afternoon: # 12pm-5pm
+    description: 'Lunch crowds, midday energy, harsh sunlight, tourists out'
+    activities_more_likely: ['eating meal', 'working', 'shopping', 'at park']
+  
+  evening: # 5pm-9pm
+    description: 'Golden hour light, people leaving work, restaurants filling, streets lively'
+    activities_more_likely: ['commuting home', 'eating meal', 'socializing', 'going out', 'relaxing']
+  
+  night: # 9pm-12am
+    description: 'Nightlife active, bars crowded, streetlights glowing, music spilling out'
+    activities_more_likely: ['going out', 'socializing', 'attending concert', 'at bar', 'partying']
+  
+  late_night: # 12am-3am
+    description: 'Only night owls out, 24hr diners busy, empty streets, neon signs'
+    activities_more_likely: ['going out', 'traveling home', 'working late shift', 'partying']
+  
+  very_late: # 3am-5am
+    description: 'Dead quiet, occasional taxi, delivery trucks, harsh streetlight glow'
+    activities_more_likely: ['sleeping', 'working night shift', 'insomnia', 'heading home from party']
+
+# ============================================================================
+# SMELLS, SOUNDS, & SENSORY DETAILS
+# ============================================================================
+nyc_smells:
+  street:
+    - 'hot asphalt and exhaust fumes'
+    - 'hot dog cart with onions'
+    - 'garbage on hot day'
+    - 'fresh pretzels'
+    - 'subway steam and tar'
+    - 'roasting chestnuts in winter'
+    - 'pizza from open door'
+    - "someone's perfume/cologne"
+    - 'cigarette smoke'
+    - 'rain on concrete'
+    - 'bakery exhaust vent'
+    - 'fish market'
+  
+  subway:
+    - 'stale air and brake dust'
+    - 'urine and cleaning solution'
+    - "someone's fast food"
+    - "homeless person's body odor"
+    - 'perfume overload in crowded car'
+    - 'electrical burning smell'
+    - 'wet cement'
+  
+  bar:
+    - 'spilled beer and cigarettes'
+    - 'stale smoke absorbed in everything'
+    - 'cheap cologne and desperation'
+    - 'popcorn from machine'
+    - 'urinal cakes from bathroom'
+  
+  coffee_shop:
+    - 'fresh ground coffee beans'
+    - 'steamed milk'
+    - 'pastries baking'
+    - 'old books and paper'
+  
+  home:
+    - 'someone cooking in another apartment'
+    - 'radiator heat and dust'
+    - 'old building mustiness'
+    - 'cleaning products'
+    - "neighbor's cigarette smoke"
+  
+  restaurant:
+    - 'garlic and olive oil'
+    - 'fresh bread'
+    - 'grilling meat'
+    - 'spices and seasonings'
+
+nyc_sounds:
+  street:
+    - 'car horns honking constantly'
+    - 'jackhammer from construction'
+    - 'police siren wailing past'
+    - 'ambulance racing through'
+    - 'bus brakes hissing'
+    - 'taxi dispatch radio crackling'
+    - 'people yelling in various languages'
+    - 'street performer playing music'
+    - 'skateboard wheels on pavement'
+    - 'pigeons cooing and flapping'
+    - 'steam hissing from manhole'
+    - 'car alarms going off'
+  
+  subway:
+    - 'train screeching into station'
+    - 'automated "stand clear of closing doors"'
+    - 'busker playing saxophone'
+    - 'token booth clerk on microphone'
+    - 'trains rumbling overhead/below'
+    - 'turnstile clicking'
+    - 'shoes on metal stairs echoing'
+  
+  bar:
+    - 'jukebox blaring over conversation'
+    - 'pool balls cracking'
+    - 'glasses clinking'
+    - 'bartender shaking cocktails'
+    - 'sports commentator on TV'
+    - 'people cheering at game'
+    - 'slot machine dinging'
+  
+  home:
+    - "neighbor's TV through thin walls"
+    - 'couple arguing upstairs'
+    - 'footsteps above'
+    - 'radiator clanking and hissing'
+    - 'car alarm outside window'
+    - 'dial-up modem connecting'
+    - 'phone ringing'
+    - 'answering machine beep'
+  
+  office:
+    - 'keyboards clacking'
+    - 'phones ringing constantly'
+    - 'fax machine beeping'
+    - 'printer jamming'
+    - 'elevator dinging'
+    - 'water cooler gurgling'
+    - 'whispered gossip'

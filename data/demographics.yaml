@@ -1,0 +1,610 @@
+# ============================================================================
+# DEMOGRAPHICS DATA
+# ----------------------------------------------------------------------------
+# This file contains all static demographic data for the simulation,
+# such as jobs, companies, names, personality archetypes,
+# education levels, interests, and initial relationship statuses.
+# ============================================================================
+
+# ============================================================================
+# CAREER & WORK
+# ============================================================================
+jobs:
+  # High Finance & Corporate
+  - { title: 'Investment Banker', salary: 120000, hours: [7, 19], weight: 0.10, education_req: 'Graduate' }
+  - { title: 'Management Consultant', salary: 95000, hours: [8, 20], weight: 0.08, education_req: 'Graduate' }
+  - { title: 'Lawyer (Corporate)', salary: 110000, hours: [8, 19], weight: 0.07, education_req: 'Graduate' }
+  - { title: 'Marketing Manager', salary: 70000, hours: [9, 18], weight: 0.10, education_req: 'College' }
+  - { title: 'Accountant', salary: 60000, hours: [9, 17], weight: 0.12, education_req: 'College' }
+  - { title: 'Paralegal', salary: 45000, hours: [9, 18], weight: 0.10, education_req: 'College' }
+  - { title: 'Admin Assistant', salary: 32000, hours: [9, 17], weight: 0.15, education_req: 'High School' }
+
+  # Tech & Media (1999!)
+  - { title: 'Software Developer (Web)', salary: 75000, hours: [10, 19], weight: 0.12, education_req: 'College' }
+  - { title: 'IT Support Specialist', salary: 48000, hours: [9, 18], weight: 0.10, education_req: 'College' }
+  - { title: 'Web Designer', salary: 55000, hours: [10, 18], weight: 0.08, education_req: 'College' }
+  - { title: 'Journalist/Writer', salary: 42000, hours: [10, 18], weight: 0.07, education_req: 'College' }
+  - { title: 'Graphic Designer', salary: 50000, hours: [9, 18], weight: 0.08, education_req: 'College' }
+
+  # Service & Retail
+  - { title: 'Bartender', salary: 28000, hours: [17, 2], weight: 0.15, education_req: 'High School' }
+  - { title: 'Chef/Cook', salary: 38000, hours: [14, 23], weight: 0.10, education_req: 'High School' }
+  - { title: 'Server/Waiter', salary: 25000, hours: [16, 1], weight: 0.15, education_req: 'High School' }
+  - { title: 'Retail Manager', salary: 35000, hours: [10, 19], weight: 0.15, education_req: 'High School' }
+  - { title: 'Retail Associate', salary: 22000, hours: [11, 20], weight: 0.20, education_req: 'High School' }
+  - { title: 'Barista', salary: 24000, hours: [6, 14], weight: 0.12, education_req: 'High School' }
+  - { title: 'Receptionist', salary: 29000, hours: [8, 17], weight: 0.10, education_req: 'High School' }
+
+  # Public Service & Healthcare
+  - { title: 'Teacher', salary: 42000, hours: [7, 15], weight: 0.18, education_req: 'College' }
+  - { title: 'Nurse', salary: 48000, hours: [7, 19], weight: 0.15, education_req: 'College' }
+  - { title: 'Police Officer', salary: 55000, hours: [8, 18], weight: 0.08, education_req: 'High School' }
+  - { title: 'Firefighter', salary: 53000, hours: [7, 19], weight: 0.05, education_req: 'High School' }
+  - { title: 'Social Worker', salary: 40000, hours: [9, 18], weight: 0.06, education_req: 'Graduate' }
+
+  # Arts & Culture
+  - { title: 'Musician (Gigging)', salary: 20000, hours: [18, 1], weight: 0.05, education_req: 'High School' }
+  - { title: 'Artist (Freelance)', salary: 25000, hours: [11, 19], weight: 0.06, education_req: 'College' }
+  - { title: 'Actor (Auditioning)', salary: 18000, hours: [10, 18], weight: 0.05, education_req: 'College' }
+  - { title: 'Museum Worker', salary: 33000, hours: [10, 18], weight: 0.07, education_req: 'College' }
+
+companies:
+  # Finance/Corporate
+  - 'Goldman Sachs'
+  - 'Morgan Stanley'
+  - 'Lehman Brothers'
+  - 'Merrill Lynch'
+  - 'JP Morgan'
+  - 'Citigroup'
+  - 'Skadden Arps'
+  - 'Davis Polk'
+  - 'McKinsey'
+  - 'BCG'
+  - 'Generic Law Firm'
+  - 'Random Ad Agency'
+  - 'Midtown Corp Inc.'
+
+  # Tech/Media
+  - 'IBM'
+  - 'Verizon'
+  - 'DoubleClick'
+  - 'TheGlobe.com'
+  - 'Kozmo.com'
+  - 'Random DotCom Startup'
+  - 'Silicon Alley Solutions'
+  - 'Village Voice'
+  - 'New York Times'
+  - 'MTV'
+  - 'Condé Nast'
+  - 'Generic Web Design Shop'
+
+  # Service/Retail
+  - 'Rudy''s Bar'
+  - 'McSorley''s Old Ale House'
+  - 'Corner Bistro'
+  - 'Katz''s Deli'
+  - 'Generic Diner'
+  - 'Local Pub'
+  - 'Neighborhood Restaurant'
+  - 'Macy''s'
+  - 'Bloomingdale''s'
+  - 'Tower Records'
+  - 'Blockbuster Video'
+  - 'Barnes & Noble'
+  - 'The Strand Bookstore'
+  - 'Local Bodega'
+  - 'Supermarket Chain'
+  - 'Stuyvesant Town (Mgmt)'
+
+  # Healthcare/Public
+  - 'Mount Sinai Hospital'
+  - 'St. Vincent''s Hospital'
+  - 'NYU Langone'
+  - 'Bellevue Hospital'
+  - 'NYC DOE'
+  - 'NYPD'
+  - 'FDNY'
+  - 'City Hall'
+  - 'Local Community Center'
+
+  # Arts/Culture
+  - 'MoMA'
+  - 'The Met'
+  - 'Lincoln Center'
+  - 'Knitting Factory'
+  - 'CBGB'
+  - 'Small Art Gallery'
+  - 'Independent Record Label'
+
+# ============================================================================
+# LOCATION & RESIDENCE
+# ============================================================================
+neighborhoods:
+  # Manhattan
+  - 'Manhattan - East Village'
+  - 'Manhattan - Upper West Side'
+  - 'Manhattan - Harlem'
+  - 'Manhattan - SoHo'
+  - 'Manhattan - Greenwich Village'
+  - 'Manhattan - Lower East Side'
+  - 'Manhattan - Chelsea'
+  - 'Manhattan - Tribeca'
+  - 'Manhattan - Midtown East'
+  - 'Manhattan - Washington Heights'
+  # Brooklyn
+  - 'Brooklyn - Williamsburg'
+  - 'Brooklyn - Park Slope'
+  - 'Brooklyn - Bushwick'
+  - 'Brooklyn - Brooklyn Heights'
+  - 'Brooklyn - DUMBO'
+  - 'Brooklyn - Cobble Hill'
+  - 'Brooklyn - Greenpoint'
+  - 'Brooklyn - Fort Greene'
+  # Queens
+  - 'Queens - Astoria'
+  - 'Queens - Long Island City'
+  - 'Queens - Flushing'
+  - 'Queens - Jackson Heights'
+  - 'Queens - Sunnyside'
+  # Bronx
+  - 'Bronx - Concourse'
+  - 'Bronx - Riverdale'
+  - 'Bronx - Fordham'
+  # Staten Island
+  - 'Staten Island - St. George'
+  - 'Staten Island - New Dorp'
+
+rent_levels:
+  - 'low'
+  - 'medium'
+  - 'high'
+  - 'very_high'
+
+# ============================================================================
+# PERSONALITY & IDENTITY
+# ============================================================================
+personality_archetypes:
+  - { primary: 'extroverted', secondary: 'agreeable', name: 'Social Butterfly' }
+  - { primary: 'introverted', secondary: 'conscientious', name: 'Quiet Professional' }
+  - { primary: 'extroverted', secondary: 'spontaneous', name: 'Free Spirit' }
+  - { primary: 'introverted', secondary: 'neurotic', name: 'Anxious Thinker' }
+  - { primary: 'extroverted', secondary: 'open', name: 'Adventurer' }
+  - { primary: 'introverted', secondary: 'agreeable', name: 'Gentle Soul' }
+  - { primary: 'disagreeable', secondary: 'closed', name: 'Contrarian' }
+  - { primary: 'conscientious', secondary: 'stable', name: 'Rock Solid' }
+  - { primary: 'spontaneous', secondary: 'disagreeable', name: 'Rebel' }
+  - { primary: 'open', secondary: 'neurotic', name: 'Creative Worrier' }
+  - { primary: 'conscientious', secondary: 'introverted', name: 'Focused Planner' }
+  - { primary: 'agreeable', secondary: 'stable', name: 'Peacemaker' }
+  - { primary: 'extroverted', secondary: 'conscientious', name: 'Ambitious Networker' }
+  - { primary: 'neurotic', secondary: 'disagreeable', name: 'Cynic' }
+  - { primary: 'open', secondary: 'spontaneous', name: 'Curious Explorer' }
+  - { primary: 'stable', secondary: 'introverted', name: 'Calm Observer' }
+
+first_names:
+  # Common 90s Male
+  - 'Michael'
+  - 'Christopher'
+  - 'Matthew'
+  - 'Jason'
+  - 'David'
+  - 'James'
+  - 'Robert'
+  - 'John'
+  - 'Joseph'
+  - 'Daniel'
+  - 'Anthony'
+  - 'Kevin'
+  - 'Brian'
+  - 'Steven'
+  - 'Andrew'
+  - 'Eric'
+  - 'Scott'
+  - 'Mark'
+  - 'Paul'
+  - 'Jeffrey'
+  - 'Ryan'
+  - 'Gary'
+  - 'Nicholas'
+  - 'Timothy'
+  - 'Stephen'
+  - 'Jonathan'
+  - 'Larry'
+  - 'Justin'
+  - 'Brandon'
+  - 'Benjamin'
+  - 'Samuel'
+  - 'Gregory'
+  - 'Patrick'
+  - 'Alexander'
+  - 'Jack'
+  - 'Dennis'
+  - 'Jerry'
+  - 'Tyler'
+  - 'Aaron'
+  - 'Jose'
+  - 'Adam'
+  - 'Henry'
+  - 'Nathan'
+  - 'Douglas'
+  - 'Zachary'
+  - 'Peter'
+  - 'Kyle'
+  - 'Walter'
+  - 'Ethan'
+  - 'Jeremy'
+  - 'Harold'
+  - 'Keith'
+  - 'Christian'
+  - 'Roger'
+  - 'Noah'
+  - 'Gerald'
+  - 'Carl'
+  - 'Terry'
+  - 'Sean'
+  - 'Austin'
+  - 'Arthur'
+  - 'Lawrence'
+  - 'Jesse'
+  - 'Dylan'
+  - 'Bryan'
+  - 'Joe'
+  - 'Jordan'
+  - 'Billy'
+  - 'Bruce'
+  - 'Albert'
+  - 'Willie'
+  - 'Gabriel'
+  - 'Logan'
+  - 'Alan'
+  - 'Juan'
+  - 'Wayne'
+  - 'Roy'
+  - 'Ralph'
+  - 'Randy'
+  - 'Eugene'
+  - 'Vincent'
+  - 'Russell'
+  - 'Elijah'
+  - 'Louis'
+  - 'Bobby'
+  - 'Philip'
+  - 'Johnny'
+  # Common 90s Female
+  - 'Jessica'
+  - 'Ashley'
+  - 'Jennifer'
+  - 'Amanda'
+  - 'Sarah'
+  - 'Stephanie'
+  - 'Nicole'
+  - 'Heather'
+  - 'Elizabeth'
+  - 'Megan'
+  - 'Melissa'
+  - 'Kimberly'
+  - 'Tiffany'
+  - 'Mary'
+  - 'Crystal'
+  - 'Michelle'
+  - 'Laura'
+  - 'Emily'
+  - 'Amy'
+  - 'Rachel'
+  - 'Angela'
+  - 'Rebecca'
+  - 'Amber'
+  - 'Lauren'
+  - 'Christina'
+  - 'Kelly'
+  - 'Samantha'
+  - 'Danielle'
+  - 'Brittany'
+  - 'Erin'
+  - 'Jamie'
+  - 'Sara'
+  - 'Andrea'
+  - 'Katherine'
+  - 'Victoria'
+  - 'Lisa'
+  - 'Maria'
+  - 'Susan'
+  - 'Karen'
+  - 'Nancy'
+  - 'Patricia'
+  - 'Linda'
+  - 'Barbara'
+  - 'Deborah'
+  - 'Sandra'
+  - 'Donna'
+  - 'Carol'
+  - 'Ruth'
+  - 'Sharon'
+  - 'Margaret'
+  - 'Catherine'
+  - 'Cynthia'
+  - 'Kathleen'
+  - 'Pamela'
+  - 'Virginia'
+  - 'Debra'
+  - 'Brenda'
+  - 'Janet'
+  - 'Kathryn'
+  - 'Frances'
+  - 'Ann'
+  - 'Diana'
+  - 'Denise'
+  - 'Judith'
+  - 'Julia'
+  - 'Rose'
+  - 'Janice'
+  - 'Marie'
+  - 'Teresa'
+  - 'Grace'
+  - 'Doris'
+  - 'Gloria'
+  - 'Evelyn'
+  - 'Jean'
+  - 'Cheryl'
+  - 'Mildred'
+  - 'Olivia'
+  - 'Abigail'
+  - 'Hannah'
+  - 'Alexis'
+  - 'Madison'
+  - 'Anna'
+  - 'Natalie'
+  - 'Chloe'
+  - 'Brianna'
+  - 'Kayla'
+  - 'Alyssa'
+  - 'Taylor'
+  # Gender Neutral/Ambiguous
+  - 'Alex'
+  - 'Jordan'
+  - 'Sam'
+  - 'Morgan'
+  - 'Casey'
+  - 'Riley'
+  - 'Taylor'
+  - 'Jamie'
+  - 'Chris'
+  - 'Pat'
+  - 'Drew'
+  - 'Quinn'
+  - 'Avery'
+  - 'Skyler'
+  - 'Dakota'
+  - 'Peyton'
+  - 'Blake'
+  - 'Cameron'
+  - 'Sage'
+  - 'Rowan'
+  - 'Kai'
+  - 'Devon'
+  - 'Leslie'
+  - 'Adrian'
+  - 'Rene'
+
+last_names:
+  - 'Smith'
+  - 'Johnson'
+  - 'Williams'
+  - 'Brown'
+  - 'Jones'
+  - 'Garcia'
+  - 'Miller'
+  - 'Davis'
+  - 'Rodriguez'
+  - 'Martinez'
+  - 'Hernandez'
+  - 'Lopez'
+  - 'Gonzalez'
+  - 'Wilson'
+  - 'Anderson'
+  - 'Thomas'
+  - 'Taylor'
+  - 'Moore'
+  - 'Martin'
+  - 'Jackson'
+  - 'Lee'
+  - 'Perez'
+  - 'Thompson'
+  - 'White'
+  - 'Harris'
+  - 'Sanchez'
+  - 'Clark'
+  - 'Ramirez'
+  - 'Lewis'
+  - 'Robinson'
+  - 'Walker'
+  - 'Young'
+  - 'Allen'
+  - 'King'
+  - 'Wright'
+  - 'Scott'
+  - 'Green'
+  - 'Baker'
+  - 'Adams'
+  - 'Nelson'
+  - 'Hill'
+  - 'Campbell'
+  - 'Mitchell'
+  - 'Roberts'
+  - 'Carter'
+  - 'Phillips'
+  - 'Evans'
+  - 'Turner'
+  - 'Torres'
+  - 'Parker'
+  - 'Collins'
+  - 'Edwards'
+  - 'Stewart'
+  - 'Flores'
+  - 'Morris'
+  - 'Nguyen'
+  - 'Murphy'
+  - 'Rivera'
+  - 'Cook'
+  - 'Rogers'
+  - 'Morgan'
+  - 'Peterson'
+  - 'Cooper'
+  - 'Reed'
+  - 'Bailey'
+  - 'Bell'
+  - 'Gomez'
+  - 'Kelly'
+  - 'Howard'
+  - 'Ward'
+  - 'Cox'
+  - 'Diaz'
+  - 'Richardson'
+  - 'Wood'
+  - 'Watson'
+  - 'Brooks'
+  - 'Bennett'
+  - 'Gray'
+  - 'James'
+  - 'Reyes'
+  - 'Cruz'
+  - 'Hughes'
+  - 'Price'
+  - 'Myers'
+  - 'Long'
+  - 'Foster'
+  - 'Sanders'
+  - 'Ross'
+  - 'Morales'
+  - 'Powell'
+  - 'Sullivan'
+  - 'Russell'
+  - 'Ortiz'
+  - 'Jenkins'
+  - 'Gutierrez'
+  - 'Perry'
+  - 'Butler'
+  - 'Barnes'
+  - 'Fisher'
+  - 'Henderson'
+  - 'Coleman'
+  - 'Simmons'
+  - 'Patterson'
+  - 'Jordan'
+  - 'Reynolds'
+  - 'Hamilton'
+  - 'Graham'
+  - 'Kim'
+  - 'Stone'
+  - 'Tang'
+  - 'Chung'
+  - 'Li'
+  - 'Chen'
+  - 'Wang'
+  - 'Liu'
+  - 'Huang'
+  - 'Zhang'
+  - 'Wu'
+  - 'O''Brien'
+  - 'O''Connor'
+  - 'Murphy'
+  - 'Kelly'
+  - 'Sullivan'
+  - 'Walsh'
+  - 'Cohen'
+  - 'Levy'
+  - 'Goldstein'
+  - 'Friedman'
+  - 'Kaplan'
+  - 'Schwartz'
+  - 'Patel'
+  - 'Singh'
+  - 'Khan'
+  - 'Shah'
+  - 'Gupta'
+  - 'Kumar'
+  - 'Schmidt'
+  - 'Müller'
+  - 'Schneider'
+  - 'Fischer'
+  - 'Weber'
+  - 'Meyer'
+  - 'Wagner'
+  - 'Becker'
+  - 'Hoffmann'
+  - 'Schulz'
+  - 'Rossi'
+  - 'Russo'
+  - 'Ferrari'
+  - 'Esposito'
+  - 'Bianchi'
+  - 'Romano'
+  - 'Silva'
+  - 'Santos'
+  - 'Ferreira'
+  - 'Pereira'
+  - 'Oliveira'
+  - 'Costa'
+  - 'Rodrigues'
+  - 'Martins'
+  - 'Dubois'
+  - 'Bernard'
+  - 'Thomas'
+  - 'Robert'
+  - 'Richard'
+  - 'Petit'
+  - 'Durand'
+  - 'Leroy'
+  - 'Moreau'
+  - 'Simon'
+  - 'Laurent'
+
+# ============================================================================
+# NEW CATEGORIES
+# ============================================================================
+
+rent_data_map:
+  manhattan: { low: 800, high: 1600 }
+  brooklyn: { low: 600, high: 1200 }
+  queens: { low: 500, high: 1000 }
+  bronx: { low: 400, high: 800 }
+  staten_island: { low: 400, high: 700 }
+  default: { low: 200, high: 400 }
+
+education_levels:
+  - { level: 'High School', weight: 0.40 }
+  - { level: 'Some College', weight: 0.25 }
+  - { level: 'College', weight: 0.25 }
+  - { level: 'Graduate', weight: 0.10 }
+
+initial_relationship_statuses:
+  - { status: 'Single', weight: 0.60 }
+  - { status: 'Dating', weight: 0.25 }
+  - { status: 'Married', weight: 0.12 }
+  - { status: 'Divorced', weight: 0.03 }
+
+interests:
+  - 'reading'
+  - 'movies'
+  - 'live_music'
+  - 'clubbing'
+  - 'sports'
+  - 'video_games'
+  - 'art'
+  - 'museums'
+  - 'theater'
+  - 'cooking'
+  - 'fashion'
+  - 'politics'
+  - 'technology'
+  - 'finance'
+  - 'travel'
+  - 'photography'
+  - 'writing'
+  - 'hiking'
+  - 'board_games'
+  - 'comics'
+  - 'anime'
+  - 'internet_cafes'
+  - 'poetry_slams'
+  - 'raves'

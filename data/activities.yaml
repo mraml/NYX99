@@ -1,0 +1,1441 @@
+# ============================================================================
+# ACTIVITY DATA - ENHANCED
+# ----------------------------------------------------------------------------
+# - Added a new 'fsm_recreation' tag for active novelty-seeking activities.
+# - 'fsm_idle' is now only for passive, low-energy activities.
+# - 'fsm_working' is now split into career-specific tags.
+# ============================================================================
+
+activities:
+  - name: 'sleeping'
+    base_score: 0
+    duration_ticks: [360, 600]
+    location_types: ['home']
+    actions:
+      - 'sleeping soundly in bed'
+      - 'tossing and turning'
+      - 'dreaming vividly'
+      - 'snoring lightly'
+      - 'hitting snooze on alarm clock'
+      - 'curled up under blankets'
+      - 'drooling on pillow'
+    interest_tags: []
+    tags: ['fsm_sleeping', 'fsm_hunker_down'] # Can also be an activity for hunkering down
+
+  - name: 'napping'
+    base_score: 3
+    duration_ticks: [20, 60]
+    location_types: ['home']
+    actions:
+      - 'dozing on couch'
+      - 'power napping in bedroom'
+      - 'nodding off in armchair'
+      - 'catching quick sleep before going out'
+    interest_tags: []
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_hunker_down'] # Good for both soothing and hunkering
+
+  - name: 'eating meal'
+    base_score: 10
+    duration_ticks: [15, 30]
+    location_types: ['home', 'restaurant']
+    actions:
+      - 'eating cereal at kitchen table'
+      - 'making a sandwich in kitchen'
+      - 'cooking dinner on stove'
+      - 'eating toast while reading paper'
+      - 'microwaving leftovers'
+      - 'eating quickly at desk (if at office)'
+      - 'having dinner at a restaurant table'
+      - 'grabbing a slice of pizza'
+      - 'eating takeout from container'
+      - 'making scrambled eggs'
+      - 'ordering Chinese delivery'
+      - 'heating up Hot Pockets'
+    interest_tags: ['food']
+    tags: ['fsm_eating']
+
+  - name: 'eating breakfast'
+    base_score: 8
+    duration_ticks: [10, 20]
+    location_types: ['home', 'restaurant', 'coffee_shop']
+    actions:
+      - 'eating cereal while half-awake'
+      - 'grabbing bagel and coffee to go'
+      - 'making eggs and toast'
+      - 'eating breakfast sandwich at diner counter'
+      - 'pouring bowl of Frosted Flakes'
+    interest_tags: ['food']
+    tags: ['fsm_eating']
+
+  - name: 'making coffee'
+    base_score: 5
+    duration_ticks: [5, 10]
+    location_types: ['home', 'office']
+    actions:
+      - 'brewing pot of coffee'
+      - 'waiting for Mr. Coffee to finish'
+      - 'grinding beans'
+      - 'pouring coffee into travel mug'
+    interest_tags: ['food']
+    tags: ['fsm_idle']
+
+  - name: 'taking shower'
+    base_score: 5
+    duration_ticks: [10, 20]
+    location_types: ['home']
+    actions:
+      - 'showering in bathroom'
+      - 'getting clean'
+      - 'washing hair'
+      - 'singing in the shower'
+      - 'letting hot water run'
+      - 'shaving in shower'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'brushing teeth'
+    base_score: 5
+    duration_ticks: [3, 5]
+    location_types: ['home']
+    actions:
+      - 'brushing teeth at sink'
+      - 'using mouthwash'
+      - 'flossing teeth'
+      - 'checking teeth in mirror'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'getting dressed'
+    base_score: 4
+    duration_ticks: [5, 15]
+    location_types: ['home']
+    actions:
+      - 'picking out clothes from closet'
+      - 'getting ready in bedroom'
+      - 'ironing shirt'
+      - 'trying on different outfits'
+      - 'putting on makeup'
+      - 'styling hair with gel'
+    interest_tags: ['fashion']
+    tags: ['fsm_idle']
+
+  - name: 'doing laundry'
+    base_score: 2
+    duration_ticks: [60, 90]
+    location_types: ['home', 'laundromat']
+    actions:
+      - 'loading washing machine'
+      - 'folding clothes on bed'
+      - 'sorting laundry by color'
+      - 'waiting at laundromat with magazine'
+      - 'transferring to dryer'
+      - 'carrying laundry basket'
+    interest_tags: []
+    tags: ['fsm_idle', 'fsm_maintenance'] # <-- NEW TAG
+
+  - name: 'working (office)'
+    base_score: 0
+    duration_ticks: [480, 540]
+    location_types: ['office']
+    actions:
+      - 'typing at their desk'
+      - 'attending a meeting in conference room'
+      - 'staring intently at CRT monitor'
+      - 'chatting by the water cooler'
+      - 'making calls on landline'
+      - 'sending a fax'
+      - 'printing documents from computer'
+      - 'getting coffee in break room'
+      - 'photocopying documents'
+      - 'organizing files in filing cabinet'
+      - 'checking voicemail'
+      - 'dealing with paper jam in printer'
+      - 'updating spreadsheet'
+      - 'writing memo'
+    interest_tags: ['work']
+    tags: ['fsm_working_office'] # <-- UPDATED TAG
+
+  - name: 'patrolling (police)'
+    base_score: 0
+    duration_ticks: [480, 540]
+    location_types: ['street']
+    actions:
+      - 'walking the beat on sidewalk'
+      - 'sitting in patrol car observing'
+      - 'watching crowd near corner'
+      - 'questioning a suspect'
+      - 'writing a ticket by the curb'
+      - 'checking in on radio'
+      - 'responding to call'
+    interest_tags: ['work']
+    tags: ['fsm_working_police'] # <-- UPDATED TAG
+
+  - name: 'teaching class (teacher)'
+    base_score: 0
+    duration_ticks: [45, 90]
+    location_types: ['school']
+    actions:
+      - 'writing on chalkboard'
+      - 'grading papers at desk'
+      - 'helping student one-on-one'
+      - 'lecturing to classroom'
+      - 'erasing board between classes'
+    interest_tags: ['work']
+    tags: ['fsm_working_teacher'] # <-- UPDATED TAG
+
+  - name: 'working (service)'
+    base_score: 0
+    duration_ticks: [360, 540]
+    location_types: ['bar', 'restaurant', 'store', 'coffee_shop']
+    actions:
+      - 'serving a customer'
+      - 'wiping down the counter'
+      - 'stocking shelves'
+      - 'operating the cash register'
+      - 'making drinks'
+      - 'taking an order'
+      - 'complaining about a customer'
+      - 'checking inventory'
+      - 'cleaning a table'
+    interest_tags: ['work', 'social']
+    tags: ['fsm_working_service'] # <-- NEW ACTIVITY AND TAG
+
+  - name: 'commuting to work'
+    base_score: 0
+    duration_ticks: [1, 1]
+    location_types: ['any']
+    actions:
+      - 'heading to work'
+      - 'leaving apartment'
+      - 'locking door'
+      - 'rushing out late'
+    interest_tags: []
+    tags: ['fsm_commuting']
+
+  - name: 'commuting home'
+    base_score: 0
+    duration_ticks: [1, 1]
+    location_types: ['any']
+    actions:
+      - 'heading home'
+      - 'leaving the office'
+      - 'walking to subway'
+      - 'tired after work'
+    interest_tags: []
+    tags: ['fsm_commuting']
+
+  - name: 'traveling'
+    base_score: 0
+    duration_ticks: [1, 1]
+    location_types: ['any']
+    actions:
+      - 'riding the subway train car'
+      - 'walking down the sidewalk'
+      - 'stuck in traffic (car/bus)'
+      - 'waiting on subway platform'
+      - 'listening to Discman while walking'
+      - 'reading newspaper on the train'
+      - 'hailing a cab'
+      - 'riding in taxi'
+      - 'waiting for bus'
+      - 'dodging other pedestrians'
+    interest_tags: []
+    tags: ['fsm_in_transit'] # <-- UPDATED from fsm_commuting
+
+  - name: 'relaxing'
+    base_score: 8
+    duration_ticks: [30, 180]
+    location_types: ['home', 'park', 'coffee_shop', 'library']
+    actions:
+      - 'watching TV on couch'
+      - 'reading book on couch'
+      - 'reading magazine at table'
+      - 'listening to CD player'
+      - 'napping on couch'
+      - 'staring out the window at home'
+      - 'sitting quietly on park bench'
+      - 'sipping coffee and relaxing'
+      - 'reading quietly in library chair'
+      - 'flipping through channels'
+      - 'organizing CD collection'
+      - 'looking at photo album'
+    interest_tags: ['tv', 'movies', 'music', 'reading', 'quiet', 'technology']
+    tags: ['fsm_idle', 'fsm_self_soothe'] # Passive, so it stays fsm_idle
+
+  - name: 'watching tv'
+    base_score: 15
+    duration_ticks: [30, 180]
+    location_types: ['home', 'bar']
+    actions:
+      - 'watching sitcom on NBC'
+      - 'catching Seinfeld rerun'
+      - 'watching Friends on TV'
+      - 'flipping through channels'
+      - 'watching news on couch'
+      - 'watching sports game at bar'
+      - 'adjusting antenna for better signal'
+      - 'watching MTV music videos'
+      - 'zoning out to infomercials'
+    interest_tags: ['tv']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_hunker_down'] # Passive, so it stays fsm_idle
+
+  - name: 'playing video games'
+    base_score: 20
+    duration_ticks: [45, 180]
+    location_types: ['home']
+    actions:
+      - 'playing N64 on TV'
+      - 'playing PlayStation in bedroom'
+      - 'frustrated with difficult level'
+      - 'saving game to memory card'
+      - 'playing GoldenEye 007'
+      - 'playing Final Fantasy VII'
+      - 'playing Tony Hawk Pro Skater'
+      - 'blowing into game cartridge'
+    interest_tags: ['games', 'technology']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'cleaning home'
+    base_score: 2
+    duration_ticks: [20, 40]
+    location_types: ['home']
+    actions:
+      - 'vacuuming the living room'
+      - 'doing dishes in kitchen sink'
+      - 'taking out trash'
+      - 'organizing clutter on desk'
+      - 'wiping down counters'
+      - 'sweeping floor'
+      - 'scrubbing bathroom'
+      - 'dusting shelves'
+    interest_tags: []
+    tags: ['fsm_idle', 'fsm_maintenance'] # <-- NEW TAG
+
+  - name: 'use internet'
+    base_score: 15
+    duration_ticks: [30, 120]
+    location_types: ['home', 'internet_cafe', 'library']
+    actions:
+      - 'hearing dial-up screech at home'
+      - 'checking AOL email on home computer'
+      - 'chatting on AIM using home computer'
+      - 'browsing AltaVista/GeoCities at internet cafe'
+      - 'using library computer terminal'
+      - 'getting kicked off (phone call at home)'
+      - 'paying for time at internet cafe computer station'
+      - 'downloading MP3s on Napster'
+      - 'reading email slowly loading'
+      - 'building GeoCities website'
+      - 'browsing Yahoo directory'
+      - 'checking eBay auctions'
+      - 'posting on message board'
+      - 'searching on Ask Jeeves'
+    interest_tags: ['technology', 'social', 'learning']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'checking email'
+    base_score: 10
+    duration_ticks: [10, 30]
+    location_types: ['home', 'office', 'internet_cafe']
+    actions:
+      - 'logging into Hotmail'
+      - 'hearing an email notification'
+      - 'deleting spam emails'
+      - 'forwarding chain email'
+      - 'typing reply slowly'
+    interest_tags: ['technology', 'social']
+    tags: ['fsm_idle', 'fsm_working_office'] # Can be idle (home) or work
+
+  - name: 'socializing'
+    base_score: 20
+    duration_ticks: [60, 240]
+    location_types: ['bar', 'restaurant', 'park', 'coffee_shop', 'venue', 'home']
+    actions:
+      - 'chatting with someone at bar counter'
+      - 'making small talk in a restaurant booth'
+      - 'laughing with friends on park bench'
+      - 'people watching at coffee shop window'
+      - 'standing near the stage at venue'
+      - 'talking in living room at home party'
+      - 'mingling near water cooler at office'
+      - 'exchanging pager numbers'
+      - 'sharing cigarette outside'
+      - 'arguing about movie'
+    interest_tags: ['social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'meeting friend'
+    base_score: 30
+    duration_ticks: [60, 180]
+    location_types: ['bar', 'restaurant', 'coffee_shop', 'park']
+    actions:
+      - 'waiting for friend at cafe table'
+      - 'ordering drinks at bar while waiting'
+      - 'greeting friend at park entrance'
+      - 'having deep conversation in restaurant booth'
+      - 'catching up over coffee at small table'
+      - 'laughing together on park bench'
+      - 'hugging hello'
+      - 'splitting check'
+    interest_tags: ['social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'going on date'
+    base_score: 40
+    duration_ticks: [90, 240]
+    location_types: ['restaurant', 'movie_theater', 'bar', 'coffee_shop']
+    actions:
+      - 'nervously waiting at restaurant table'
+      - 'making good impression'
+      - 'sharing dessert'
+      - 'walking together after dinner'
+      - 'holding hands at movie theater'
+      - 'getting drinks at cozy bar'
+      - 'laughing at bad joke'
+      - 'awkward goodnight at door'
+    interest_tags: ['social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'going out'
+    base_score: 25
+    duration_ticks: [120, 300]
+    location_types: ['bar', 'venue', 'restaurant']
+    actions:
+      - 'having drinks at bar counter'
+      - 'dancing on dance floor at venue'
+      - 'seeing live music near stage'
+      - 'out for dinner at restaurant table'
+      - 'closing down the bar'
+      - 'standing outside smoking'
+      - 'showing ID at door'
+    interest_tags: ['social', 'going_out', 'music', 'food']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'throwing party'
+    base_score: 35
+    duration_ticks: [180, 360]
+    location_types: ['home']
+    actions:
+      - 'greeting guests at door'
+      - 'putting on music mix CD'
+      - 'refilling snacks'
+      - 'making drinks in kitchen'
+      - 'telling people where bathroom is'
+      - 'cleaning up spills'
+      - 'turning music down (neighbors)'
+    interest_tags: ['social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending party'
+    base_score: 30
+    duration_ticks: [120, 300]
+    location_types: ['home', 'venue']
+    actions:
+      - 'mingling with red cup'
+      - 'dancing in living room'
+      - 'talking loudly over music'
+      - 'raiding fridge'
+      - 'smoking on fire escape'
+      - 'exchanging numbers'
+    interest_tags: ['social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'talking on phone'
+    base_score: 12
+    duration_ticks: [15, 60]
+    location_types: ['home']
+    actions:
+      - 'chatting on landline phone'
+      - 'leaving voicemail on answering machine'
+      - 'hearing busy signal'
+      - 'pacing while talking on phone'
+      - 'twirling phone cord'
+      - 'lying on bed talking'
+      - 'checking answering machine'
+    interest_tags: ['social']
+    tags: ['fsm_socializing'] # This is social, but not really 'recreation'
+
+  - name: 'using payphone'
+    base_score: 5
+    duration_ticks: [5, 15]
+    location_types: ['street']
+    actions:
+      - 'inserting quarters in payphone'
+      - 'calling from phone booth'
+      - 'using calling card'
+      - 'waiting for someone to answer'
+      - 'shouting over street noise'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'shopping'
+    base_score: 5
+    duration_ticks: [30, 60]
+    location_types: ['store']
+    actions:
+      - 'browsing grocery aisles'
+      - 'comparing prices in store aisle'
+      - 'waiting in checkout line'
+      - 'carrying grocery bags home'
+      - 'using shopping cart'
+      - 'checking expiration dates'
+      - 'writing check at register'
+    interest_tags: ['shopping']
+    tags: ['fsm_idle', 'fsm_shopping'] # <-- NEW TAG
+
+  - name: 'window shopping'
+    base_score: 8
+    duration_ticks: [20, 60]
+    location_types: ['street', 'mall']
+    actions:
+      - 'looking at store windows'
+      - 'browsing without buying'
+      - 'trying on clothes'
+      - 'imagining purchases'
+    interest_tags: ['shopping', 'fashion']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'getting snacks'
+    base_score: 3
+    duration_ticks: [5, 10]
+    location_types: ['office', 'store']
+    actions:
+      - 'getting chips from office vending machine'
+      - 'grabbing coffee from break room'
+      - 'eating snack at desk'
+      - 'buying candy bar at store checkout'
+      - 'shaking vending machine'
+      - 'getting change for dollar'
+    interest_tags: ['food']
+    tags: ['fsm_eating']
+
+  - name: 'get coffee'
+    base_score: 10
+    duration_ticks: [15, 45]
+    location_types: ['coffee_shop', 'store', 'restaurant']
+    actions:
+      - 'ordering latte at coffee shop counter'
+      - 'waiting for cappuccino at cafe'
+      - 'reading paper at coffee shop table'
+      - 'sipping espresso at restaurant bar'
+      - 'grabbing coffee to go from store checkout'
+      - 'adding sugar and cream'
+      - 'chatting with barista'
+    interest_tags: ['food']
+    tags: ['fsm_eating', 'fsm_socializing'] # Can be for food or social
+
+  - name: 'smoking cigarette'
+    base_score: 6
+    duration_ticks: [5, 10]
+    location_types: ['street', 'bar', 'home']
+    actions:
+      - 'smoking outside building'
+      - 'bumming cigarette'
+      - 'lighting up at bar'
+      - 'smoking on fire escape'
+      - 'sharing lighter'
+      - 'stubbing out cigarette'
+    interest_tags: ['social']
+    tags: ['fsm_idle']
+
+  - name: 'working out'
+    base_score: 10
+    duration_ticks: [45, 90]
+    location_types: ['gym', 'park']
+    actions:
+      - 'running on treadmill at gym'
+      - 'lifting weights in gym weight area'
+      - 'stretching on gym mat'
+      - 'jogging on park path'
+      - 'doing sit-ups'
+      - 'using StairMaster'
+      - 'checking pulse'
+    interest_tags: ['sports', 'outdoors']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'taking walk'
+    base_score: 8
+    duration_ticks: [20, 60]
+    location_types: ['street', 'park']
+    actions:
+      - 'walking briskly down sidewalk'
+      - 'strolling leisurely through park path'
+      - 'window shopping along storefronts'
+      - 'walking dog in park'
+      - 'enjoying fresh air'
+      - 'people watching while walking'
+    interest_tags: ['outdoors']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'walking dog'
+    base_score: 12
+    duration_ticks: [20, 40]
+    location_types: ['street', 'park']
+    actions:
+      - 'walking dog on leash'
+      - 'picking up after dog'
+      - 'chatting with other dog owners'
+      - 'letting dog sniff everything'
+      - 'untangling leash'
+    interest_tags: ['outdoors']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'at park'
+    base_score: 12
+    duration_ticks: [30, 120]
+    location_types: ['park']
+    actions:
+      - 'sitting on park bench watching people'
+      - 'walking along park path'
+      - 'enjoying weather near fountain'
+      - 'reading book on quiet lawn'
+      - 'watching kids on playground'
+      - 'playing chess at park table'
+      - 'feeding pigeons'
+      - 'lying on grass'
+    interest_tags: ['outdoors', 'reading', 'social', 'games']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'playing sports'
+    base_score: 18
+    duration_ticks: [60, 120]
+    location_types: ['park', 'gym']
+    actions:
+      - 'playing pickup basketball'
+      - 'shooting hoops'
+      - 'playing softball in field'
+      - 'kicking soccer ball around'
+      - 'playing tennis'
+      - 'arguing about foul'
+    interest_tags: ['sports', 'outdoors', 'social']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'watch movie'
+    base_score: 30
+    duration_ticks: [120, 180]
+    location_types: ['movie_theater']
+    actions:
+      - 'buying ticket in lobby'
+      - 'getting popcorn at concession stand'
+      - 'watching movie in theater seat'
+      - 'finding seat in dark theater'
+      - 'watching previews'
+      - 'shushing talkers'
+    interest_tags: ['movies']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'renting video'
+    base_score: 15
+    duration_ticks: [20, 45]
+    location_types: ['video_store']
+    actions:
+      - 'browsing new releases at Blockbuster'
+      - 'reading back of VHS box'
+      - 'checking if movie is in stock'
+      - 'showing membership card'
+      - 'picking candy at counter'
+      - 'rewinding tape to avoid fee'
+    interest_tags: ['movies']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'watching rented movie'
+    base_score: 25
+    duration_ticks: [120, 180]
+    location_types: ['home']
+    actions:
+      - 'watching VHS on couch'
+      - 'adjusting tracking on VCR'
+      - 'making popcorn at home'
+      - 'rewinding tape when done'
+      - 'pausing for bathroom break'
+    interest_tags: ['movies']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'browse books'
+    base_score: 15
+    duration_ticks: [30, 90]
+    location_types: ['bookstore', 'library']
+    actions:
+      - 'browsing new releases near bookstore entrance'
+      - 'reading chapter in bookstore cafe'
+      - 'looking for author in fiction aisle'
+      - 'checking out books at library desk'
+      - 'searching library computer catalog'
+      - 'reading quietly in library reading room'
+      - 'smelling new books'
+      - 'getting recommendations'
+    interest_tags: ['reading']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'play arcade game'
+    base_score: 25
+    duration_ticks: [30, 60]
+    location_types: ['arcade', 'bar', 'movie_theater']
+    actions:
+      - 'playing Street Fighter II cabinet'
+      - 'mashing pinball machine buttons'
+      - 'trying to win prize from claw machine'
+      - 'inserting tokens'
+      - 'playing game in bar corner'
+      - 'playing game in movie theater lobby arcade cabinet'
+      - 'getting high score'
+      - 'continuing game'
+    interest_tags: ['games']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'reading book'
+    base_score: 18
+    duration_ticks: [45, 120]
+    location_types: ['home', 'library', 'park', 'coffee_shop']
+    actions:
+      - 'reading novel on couch at home'
+      - 'reading newspaper at kitchen table'
+      - 'reading magazine in library chair'
+      - 'lost in a book on park bench'
+      - 'reading while sipping coffee at small table'
+      - 'turning pages carefully'
+      - 'using bookmark'
+    interest_tags: ['reading']
+    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive, so it stays fsm_idle
+
+  - name: 'reading newspaper'
+    base_score: 12
+    duration_ticks: [15, 45]
+    location_types: ['home', 'coffee_shop', 'subway', 'restaurant']
+    actions:
+      - 'reading New York Times at table'
+      - 'reading Post on subway'
+      - 'checking sports scores'
+      - 'doing crossword puzzle'
+      - 'folding newspaper awkwardly'
+      - 'ink smudging on fingers'
+    interest_tags: ['reading']
+    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive
+
+  - name: 'listening to music'
+    base_score: 16
+    duration_ticks: [30, 120]
+    location_types: ['home', 'street']
+    actions:
+      - 'listening to CD on stereo'
+      - 'making mix tape'
+      - 'listening to Discman while walking'
+      - 'organizing CD collection'
+      - 'reading album liner notes'
+      - 'rewinding cassette tape'
+      - 'skipping CD track'
+    interest_tags: ['music']
+    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive
+
+  - name: 'playing pool'
+    base_score: 22
+    duration_ticks: [45, 90]
+    location_types: ['bar']
+    actions:
+      - 'lining up a shot at pool table'
+      - 'sinking the 8-ball'
+      - 'chatting between turns at pool table'
+      - 'chalking cue stick'
+      - 'scratching on break'
+      - 'calling pocket'
+    interest_tags: ['games', 'social']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'playing darts'
+    base_score: 18
+    duration_ticks: [30, 60]
+    location_types: ['bar']
+    actions:
+      - 'throwing darts at board'
+      - 'keeping score on chalkboard'
+      - 'pulling darts from board'
+      - 'celebrating bullseye'
+    interest_tags: ['games', 'social']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'visit library'
+    base_score: 12
+    duration_ticks: [60, 180]
+    location_types: ['library']
+    actions:
+      - 'browsing shelves in stacks'
+      - 'reading quietly in reading room'
+      - 'using computer terminal at library'
+      - 'checking out books at desk'
+      - 'researching in reference section'
+      - 'printing from library computer'
+    interest_tags: ['reading', 'learning', 'quiet']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'visit museum'
+    base_score: 18
+    duration_ticks: [90, 240]
+    location_types: ['museum']
+    actions:
+      - 'looking at exhibits in exhibit hall'
+      - 'reading placards'
+      - 'visiting museum gift shop'
+      - 'attending special exhibit'
+      - 'walking through museum lobby'
+      - 'taking audio tour'
+      - 'sketching artwork'
+    interest_tags: ['art', 'history', 'learning', 'culture']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending concert'
+    base_score: 40
+    duration_ticks: [120, 240]
+    location_types: ['venue']
+    actions:
+      - 'moshing near stage'
+      - 'singing along to songs'
+      - 'holding up lighter during ballad'
+      - 'buying tour t-shirt'
+      - 'ears ringing after show'
+      - 'waiting for encore'
+    interest_tags: ['music', 'social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'go to venue'
+    base_score: 35
+    duration_ticks: [120, 240]
+    location_types: ['venue']
+    actions:
+      - 'watching band perform near stage'
+      - 'dancing on dance floor'
+      - 'getting drinks at venue bar'
+      - 'talking during intermission'
+      - 'checking coat at entrance'
+      - 'getting hand stamped'
+      - 'buying merch'
+    interest_tags: ['music', 'social', 'going_out', 'culture']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending class'
+    base_score: 5
+    duration_ticks: [60, 120]
+    location_types: ['school']
+    actions:
+      - 'taking notes in lecture hall'
+      - 'raising hand to answer'
+      - 'doodling in notebook'
+      - 'falling asleep in back'
+      - 'packing up books'
+    interest_tags: ['learning']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'studying'
+    base_score: 8
+    duration_ticks: [60, 180]
+    location_types: ['home', 'library', 'coffee_shop']
+    actions:
+      - 'studying at desk'
+      - 'highlighting textbook'
+      - 'making flashcards'
+      - 'cramming for exam'
+      - 'working on group project'
+    interest_tags: ['learning']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- ADDED fsm_recreation
+
+  - name: 'job hunting'
+    base_score: 10
+    duration_ticks: [30, 120]
+    location_types: ['home', 'library', 'internet_cafe']
+    actions:
+      - 'looking through classifieds'
+      - 'updating resume on computer'
+      - 'making copies of resume'
+      - 'calling about job posting'
+      - 'filling out application'
+    interest_tags: ['work']
+    tags: ['fsm_working_office'] # <-- UPDATED from fsm_idle
+
+  - name: 'job interview'
+    base_score: 15
+    duration_ticks: [30, 90]
+    location_types: ['office']
+    actions:
+      - 'waiting nervously in lobby'
+      - 'shaking hands firmly'
+      - 'answering interview questions'
+      - 'asking about benefits'
+      - 'following up with thank you note'
+    interest_tags: ['work']
+    tags: ['fsm_working_office'] # <-- UPDATED from fsm_idle
+
+  - name: 'seeing doctor'
+    base_score: 5
+    duration_ticks: [30, 90]
+    location_types: ['hospital', 'clinic']
+    actions:
+      - 'waiting in waiting room'
+      - 'reading old magazines'
+      - 'filling out medical forms'
+      - 'getting checkup'
+      - 'picking up prescription'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'at dentist'
+    base_score: 3
+    duration_ticks: [30, 60]
+    location_types: ['clinic']
+    actions:
+      - 'sitting in dentist chair'
+      - 'getting teeth cleaned'
+      - 'trying not to gag'
+      - 'rinsing and spitting'
+      - 'scheduling next appointment'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'getting haircut'
+    base_score: 8
+    duration_ticks: [30, 60]
+    location_types: ['salon']
+    actions:
+      - 'sitting in barber chair'
+      - 'explaining how they want it cut'
+      - 'reading magazine under cape'
+      - 'checking mirror nervously'
+      - 'tipping stylist'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'banking'
+    base_score: 4
+    duration_ticks: [15, 45]
+    location_types: ['bank']
+    actions:
+      - 'waiting in line at bank'
+      - 'depositing check'
+      - 'withdrawing cash from teller'
+      - 'using ATM machine'
+      - 'balancing checkbook'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'attending religious service'
+    base_score: 10
+    duration_ticks: [60, 120]
+    location_types: ['church']
+    actions:
+      - 'sitting in pew'
+      - 'singing hymns'
+      - 'listening to sermon'
+      - 'greeting others after service'
+      - 'lighting candle'
+    interest_tags: ['spiritual']
+    tags: ['fsm_idle', 'fsm_socializing']
+
+  - name: 'volunteering'
+    base_score: 15
+    duration_ticks: [120, 240]
+    location_types: ['community_center', 'church', 'park']
+    actions:
+      - 'serving food at shelter'
+      - 'tutoring student'
+      - 'organizing donation drive'
+      - 'cleaning up park'
+      - 'helping elderly neighbor'
+    interest_tags: ['community']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending protest'
+    base_score: 20
+    duration_ticks: [60, 240]
+    location_types: ['street', 'park']
+    actions:
+      - 'marching with sign'
+      - 'chanting slogans'
+      - 'listening to speakers'
+      - 'handing out flyers'
+      - 'signing petition'
+    interest_tags: ['politics', 'social']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending support group'
+    base_score: 12
+    duration_ticks: [60, 90]
+    location_types: ['community_center', 'church']
+    actions:
+      - 'sitting in circle'
+      - 'sharing story'
+      - 'listening supportively'
+      - 'drinking coffee from urn'
+      - 'exchanging phone numbers'
+    interest_tags: ['social']
+    tags: ['fsm_socializing']
+
+  - name: 'taking art class'
+    base_score: 18
+    duration_ticks: [90, 180]
+    location_types: ['community_center', 'studio']
+    actions:
+      - 'painting on canvas'
+      - 'sketching from life'
+      - 'getting feedback from instructor'
+      - 'cleaning brushes'
+      - 'admiring other students work'
+    interest_tags: ['art', 'learning']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending comedy show'
+    base_score: 28
+    duration_ticks: [90, 150]
+    location_types: ['venue', 'bar']
+    actions:
+      - 'laughing at jokes'
+      - 'heckling comedian'
+      - 'ordering two drink minimum'
+      - 'sitting at small table'
+      - 'clapping between acts'
+    interest_tags: ['comedy', 'social', 'going_out']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending poetry reading'
+    base_score: 16
+    duration_ticks: [60, 120]
+    location_types: ['coffee_shop', 'bookstore', 'venue']
+    actions:
+      - 'listening to poet at mic'
+      - 'snapping fingers instead of clapping'
+      - 'sipping coffee in back'
+      - 'reading from own work'
+      - 'buying chapbook'
+    interest_tags: ['poetry', 'culture', 'reading']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'attending theater'
+    base_score: 32
+    duration_ticks: [120, 180]
+    location_types: ['theater']
+    actions:
+      - 'watching play from seat'
+      - 'reading playbill'
+      - 'clapping at intermission'
+      - 'standing ovation'
+      - 'leaving theater discussing show'
+    interest_tags: ['theater', 'culture']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'taking dance class'
+    base_score: 20
+    duration_ticks: [60, 90]
+    location_types: ['studio', 'gym']
+    actions:
+      - 'learning choreography'
+      - 'stretching at barre'
+      - 'watching in mirror'
+      - 'dancing with partner'
+      - 'sweating through workout'
+    interest_tags: ['dance', 'sports']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'taking music lesson'
+    base_score: 18
+    duration_ticks: [45, 60]
+    location_types: ['home', 'studio']
+    actions:
+      - 'practicing scales'
+      - 'learning new song'
+      - 'getting feedback from teacher'
+      - 'sight reading sheet music'
+      - 'recording on cassette'
+    interest_tags: ['music', 'learning']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'band practice'
+    base_score: 25
+    duration_ticks: [120, 180]
+    location_types: ['garage', 'studio']
+    actions:
+      - 'jamming with bandmates'
+      - 'arguing about setlist'
+      - 'tuning guitar'
+      - 'working on new song'
+      - 'sound checking'
+    interest_tags: ['music', 'social']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'photography'
+    base_score: 20
+    duration_ticks: [60, 180]
+    location_types: ['street', 'park', 'studio']
+    actions:
+      - 'taking photos around neighborhood'
+      - 'adjusting camera settings'
+      - 'loading film into camera'
+      - 'looking for good light'
+      - 'developing film in darkroom'
+    interest_tags: ['photography', 'art']
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'antique shopping'
+    base_score: 14
+    duration_ticks: [45, 120]
+    location_types: ['store']
+    actions:
+      - 'browsing antique store'
+      - 'examining old items'
+      - 'haggling over price'
+      - 'finding treasure'
+      - 'asking about history'
+    interest_tags: ['shopping', 'history']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'thrift shopping'
+    base_score: 16
+    duration_ticks: [45, 90]
+    location_types: ['store']
+    actions:
+      - 'digging through racks'
+      - 'trying on vintage clothes'
+      - 'finding good deal'
+      - 'checking for stains'
+      - 'filling shopping basket'
+    interest_tags: ['shopping', 'fashion']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'record shopping'
+    base_score: 22
+    duration_ticks: [30, 90]
+    location_types: ['record_store']
+    actions:
+      - 'flipping through vinyl bins'
+      - 'listening at listening station'
+      - 'asking clerk for recommendations'
+      - 'finding rare album'
+      - 'checking condition of record'
+    interest_tags: ['music', 'shopping']
+    tags: ['fsm_idle', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'comic book shopping'
+    base_score: 18
+    duration_ticks: [30, 90]
+    location_types: ['comic_shop']
+    actions:
+      - 'browsing new releases'
+      - 'checking subscription box'
+      - 'reading issue in store'
+      - 'discussing with other fans'
+      - 'buying in plastic sleeve'
+    interest_tags: ['comics', 'shopping']
+    tags: ['fsm_idle', 'fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'people watching'
+    base_score: 10
+    duration_ticks: [20, 60]
+    location_types: ['park', 'coffee_shop', 'street']
+    actions:
+      - 'observing passersby'
+      - 'making up stories about strangers'
+      - 'sitting on bench watching'
+      - 'sipping drink slowly'
+      - 'noticing interesting characters'
+    interest_tags: ['social']
+    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive
+
+  - name: 'arguing'
+    base_score: -5
+    duration_ticks: [10, 30]
+    location_types: ['any']
+    actions:
+      - 'having heated discussion'
+      - 'raising voice'
+      - 'gesturing emphatically'
+      - 'walking away angry'
+      - 'slamming door'
+    interest_tags: []
+    tags: ['fsm_socializing'] # A negative social action
+
+  - name: 'making up'
+    base_score: 15
+    duration_ticks: [15, 45]
+    location_types: ['home', 'coffee_shop', 'park']
+    actions:
+      - 'apologizing sincerely'
+      - 'hugging it out'
+      - 'talking through issues'
+      - 'promising to do better'
+      - 'laughing about fight'
+    interest_tags: ['social']
+    tags: ['fsm_socializing']
+
+  - name: 'gossiping'
+    base_score: 12
+    duration_ticks: [15, 45]
+    location_types: ['home', 'coffee_shop', 'bar', 'office']
+    actions:
+      - 'whispering secrets'
+      - 'sharing juicy news'
+      - 'talking behind someone back'
+      - 'leaning in conspiratorially'
+      - 'promising not to tell'
+    interest_tags: ['social']
+    tags: ['fsm_socializing']
+
+  - name: 'flirting'
+    base_score: 18
+    duration_ticks: [15, 60]
+    location_types: ['bar', 'coffee_shop', 'party', 'venue']
+    actions:
+      - 'making eye contact'
+      - 'laughing at jokes'
+      - 'touching arm lightly'
+      - 'exchanging pager numbers'
+      - 'buying drink for someone'
+    interest_tags: ['social']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'breaking up'
+    base_score: -30
+    duration_ticks: [30, 90]
+    location_types: ['home', 'coffee_shop', 'restaurant']
+    actions:
+      - 'having difficult conversation'
+      - 'crying'
+      - 'returning belongings'
+      - 'saying final goodbye'
+      - 'leaving in tears'
+    interest_tags: []
+    tags: ['fsm_socializing']
+
+  - name: 'moving apartments'
+    base_score: -10
+    duration_ticks: [240, 480]
+    location_types: ['home']
+    actions:
+      - 'packing boxes'
+      - 'carrying furniture down stairs'
+      - 'loading moving truck'
+      - 'unpacking in new place'
+      - 'arguing with movers'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'apartment hunting'
+    base_score: 5
+    duration_ticks: [120, 240]
+    location_types: ['street']
+    actions:
+      - 'viewing apartment'
+      - 'checking classifieds'
+      - 'meeting with landlord'
+      - 'calculating if can afford rent'
+      - 'calling about listing'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'paying bills'
+    base_score: -5
+    duration_ticks: [15, 30]
+    location_types: ['home']
+    actions:
+      - 'writing checks'
+      - 'stuffing envelopes'
+      - 'looking at bank statement'
+      - 'worrying about money'
+      - 'putting stamps on bills'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'doing taxes'
+    base_score: -15
+    duration_ticks: [120, 240]
+    location_types: ['home']
+    actions:
+      - 'filling out forms'
+      - 'searching for receipts'
+      - 'using calculator'
+      - 'stressed about deductions'
+      - 'mailing to IRS'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'mug someone'
+    base_score: -50
+    duration_ticks: [5, 10]
+    location_types: ['street']
+    actions:
+      - 'looking for target in alley'
+      - 'threatening someone on sidewalk'
+      - 'running away down street'
+      - 'feeling adrenaline rush'
+      - 'checking stolen wallet'
+    interest_tags: []
+    tags: ['fsm_idle'] # An 'idle' (negative) action
+
+  - name: 'buy drugs'
+    base_score: -20
+    duration_ticks: [5, 10]
+    location_types: ['street', 'bar', 'park']
+    actions:
+      - 'meeting dealer on street corner'
+      - 'making quick exchange in alley'
+      - 'looking over shoulder nervously'
+      - 'feeling relieved and anxious'
+      - 'hiding purchase'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'sell drugs'
+    base_score: -30
+    duration_ticks: [10, 60]
+    location_types: ['street', 'park']
+    actions:
+      - 'waiting on corner'
+      - 'making quick sale'
+      - 'watching for cops'
+      - 'counting money discreetly'
+      - 'moving to new spot'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'using drugs'
+    base_score: -25
+    duration_ticks: [30, 120]
+    location_types: ['home', 'bathroom', 'alley']
+    actions:
+      - 'getting high in bathroom'
+      - 'feeling effects kick in'
+      - 'paranoid someone knows'
+      - 'hiding evidence'
+      - 'coming down'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'stealing'
+    base_score: -40
+    duration_ticks: [5, 15]
+    location_types: ['store']
+    actions:
+      - 'shoplifting from store'
+      - 'stuffing item in jacket'
+      - 'acting casual'
+      - 'leaving quickly'
+      - 'heart pounding'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'getting arrested'
+    base_score: -100
+    duration_ticks: [30, 60]
+    location_types: ['street', 'store']
+    actions:
+      - 'being handcuffed'
+      - 'put in back of police car'
+      - 'reading rights'
+      - 'being processed at station'
+      - 'making phone call'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'jailed'
+    base_score: -1000
+    duration_ticks: [1440, 2880]
+    location_types: ['jail']
+    actions:
+      - 'sitting on cot in cell'
+      - 'staring at wall'
+      - 'talking to cellmate'
+      - 'being processed at police station'
+      - 'waiting for release'
+      - 'eating awful food'
+      - 'playing cards with inmates'
+      - 'counting days'
+    interest_tags: []
+    tags: ['fsm_idle'] # The 'idle' state in jail
+
+  - name: 'panhandling'
+    base_score: -10
+    duration_ticks: [60, 240]
+    location_types: ['street', 'subway']
+    actions:
+      - 'sitting with cup'
+      - 'asking for spare change'
+      - 'holding cardboard sign'
+      - 'playing instrument for money'
+      - 'thanking donors'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'dumpster diving'
+    base_score: -15
+    duration_ticks: [20, 60]
+    location_types: ['alley']
+    actions:
+      - 'searching through trash'
+      - 'finding discarded food'
+      - 'collecting cans for recycling'
+      - 'looking for valuables'
+      - 'checking behind restaurants'
+    interest_tags: []
+    tags: ['fsm_idle']
+
+  - name: 'in hospital'
+    base_score: -50
+    duration_ticks: [480, 2880]
+    location_types: ['hospital']
+    actions:
+      - 'lying in hospital bed'
+      - 'being examined by doctor'
+      - 'getting IV fluids'
+      - 'watching TV from bed'
+      - 'receiving visitors'
+      - 'pressing call button'
+    interest_tags: []
+    tags: ['fsm_idle'] # The 'idle' state in hospital
+
+  - name: 'at funeral'
+    base_score: -40
+    duration_ticks: [90, 180]
+    location_types: ['church', 'funeral_home']
+    actions:
+      - 'mourning at service'
+      - 'crying quietly'
+      - 'comforting grieving family'
+      - 'viewing casket'
+      - 'sharing memories'
+    interest_tags: []
+    tags: ['fsm_socializing']
+
+  - name: 'at wedding'
+    base_score: 35
+    duration_ticks: [180, 300]
+    location_types: ['church', 'venue', 'restaurant']
+    actions:
+      - 'watching ceremony'
+      - 'dancing at reception'
+      - 'eating wedding cake'
+      - 'catching bouquet'
+      - 'making toast'
+      - 'crying happy tears'
+    interest_tags: ['social', 'celebration']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'baby shower'
+    base_score: 20
+    duration_ticks: [120, 180]
+    location_types: ['home', 'restaurant']
+    actions:
+      - 'playing shower games'
+      - 'giving gifts'
+      - 'eating cake'
+      - 'guessing baby name'
+      - 'taking photos'
+    interest_tags: ['social', 'celebration']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+
+  - name: 'birthday party'
+    base_score: 30
+    duration_ticks: [120, 240]
+    location_types: ['home', 'restaurant', 'bar']
+    actions:
+      - 'singing happy birthday'
+      - 'eating birthday cake'
+      - 'opening presents'
+      - 'playing party games'
+      - 'taking group photo'
+    interest_tags: ['social', 'celebration']
+    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
