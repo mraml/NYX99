@@ -176,6 +176,15 @@ For detailed documentation, see the [Docs](./Docs) directory:
 - [Configuration Guide](./Docs/configuration.md)
 - [Development Guide](./Docs/development.md)
 
+## Roadmap
+
+Planned improvements 
+
+- More sophisticated map.
+- Interactive items and inventories at locations.
+- Enhance actions/activities for agents according to location and inventory.
+- Increase agent intelligence and balance scoring/needs.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes:
@@ -200,4 +209,4 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ---
 
-**NYX99** - Simulating humanity, one agent at a time.
+**NYX99** - A nice place for us to live when the machines take over.
