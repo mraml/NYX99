@@ -184,6 +184,7 @@ Planned improvements
 - Interactive items and inventories at locations.
 - Enhance actions/activities for agents according to location and inventory.
 - Increase agent intelligence and balance scoring/needs.
+- Integrate realistic dialog, thought system. 
 
 ## 🤝 Contributing
 
