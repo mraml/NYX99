@@ -4,7 +4,7 @@
 
 ## 📖 Overview
 
-NYX99 is an advanced simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding as a long term hobby, like my own digital model train set, or terrarium, and eventually maybe a nice place for us all to live once the machines take over.
+NYX99 is an advanced command line simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding as a long term hobby, like my own digital model train set, or terrarium, and eventually maybe a nice place for us all to live once the machines take over.
 
 ## ✨ Features
 
@@ -101,26 +101,6 @@ const simulation = new NYX99({
 simulation.start();
 ```
 
-### Monitoring Simulation State
-
-Access the web UI at `http://localhost:3000` (or your configured port) to:
-- View real-time population statistics
-- Monitor individual agents
-- Control simulation parameters
-- Export simulation data
-
-### API Endpoints
-
-```
-GET  /api/status          - Get simulation status
-POST /api/start           - Start simulation
-POST /api/stop            - Stop simulation
-GET  /api/agents          - List all agents
-GET  /api/agents/:id      - Get specific agent details
-POST /api/config          - Update configuration
-GET  /api/metrics         - Get simulation metrics
-```
-
 ## 📊 Simulation Components
 
 ### Agents (Humans)
@@ -171,10 +151,10 @@ npm run build
 ## 📚 Documentation
 
 For detailed documentation, see the [Docs](./Docs) directory:
-- [Architecture Guide](./Docs/architecture.md)
-- [API Reference](./Docs/api.md)
-- [Configuration Guide](./Docs/configuration.md)
-- [Development Guide](./Docs/development.md)
+- [Architecture Guide](./Docs/architecture.md) (to do)
+- [API Reference](./Docs/api.md) (to do)
+- [Configuration Guide](./Docs/configuration.md) (to do)
+- [Development Guide](./Docs/development.md) (to do)
 
 ## Roadmap
 
