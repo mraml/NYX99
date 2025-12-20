@@ -4,7 +4,7 @@
 
 ## 📖 Overview
 
-NYX99 is an advanced simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding long term, like my own digital model train set, or terrarium.
+NYX99 is an advanced simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding as a long termvhobby, like my own digital model train set, or terrarium, and eventually maybe a nice place for us all to live once the machines take over.
 
 ## ✨ Features
 
