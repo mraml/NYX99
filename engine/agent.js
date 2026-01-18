@@ -23,14 +23,6 @@ import {
   coerceObject
 } from './agentUtilities.js';
 
-import {
-  scoreAcquireHousing,
-  scoreSleep,
-  scoreEatAndShop,
-  scoreWork
-} from './agent/scoring/scorerNeeds.js';
-import { PriorityQueue } from './structures/PriorityQueue.js'; 
-
 import logger from '../logger.js';
 
 // === CONFIGURATION ===
@@ -160,7 +152,6 @@ class Agent {
     this.job = safeParseComplex(job, null);
     if (!this.job && demographics?.jobs) { this.job = generateRandomJob(demographics); } 
     if (this.job && !this.job.recentEvents) this.job.recentEvents = [];
-    if (this.job && !this.job.satisfaction) this.job.satisfaction = 50;
     
     this.isMetasim = isMetasim || false;
     this.persona = safeParseComplex(persona, generatePersona());
@@ -188,9 +179,6 @@ class Agent {
     this.rentFailures = rentFailures ?? 0;
     this.currentActivity = currentActivity || currentActivityName || 'Idling';
     this.currentActivityName = currentActivityName || 'idling';
-    this.subLocation = null;
-    this.activityStartTick = activityStartTick ?? 0;
-    this.minActivityDuration = minActivityDuration ?? 0;
     this.travelTimer = travelTimer ?? 0;
     this.transitFrom = transitFrom || null;
     this.transitTo = transitTo || null;
@@ -201,7 +189,6 @@ class Agent {
     this.contextualRoutines = safeParseComplex(contextualRoutines, []) ?? [];
     this.history = safeParseComplex(history, { mood: [], energy: [], stress: [], money: [] });
     this.lastSocialPartner = null; 
-    this.perceivedCrowding = 'empty'; 
     this.perceivedAgents = [];
 
     this.fsm = new FiniteStateMachine(this);
@@ -239,120 +226,22 @@ class Agent {
     }
 
     this._processSenses(worldState);
-    this._updateStatusEffects();
+    
+    // [REF] SINGLE BRAIN LOGIC
+    // We strictly use the FSM. No external 'decideNextAction' overrides.
+    // We pass the required environment data to the FSM tick.
+    const hour = worldTime.getHours();
+    
+    // Pass localEnv (noise, temp) if available, otherwise defaults
+    const env = this.localEnv || { noise: 0.2, temp: 20 };
+    
+    // Ticking the FSM determines behaviors.
+    // Note: The FSM now handles state transitions internally.
+    this.fsm.tick(hour, env, worldState);
 
     if (tick % 100 === 0) {
         this.updateHistory(); 
     }
-
-    if (!this.inTransit) {
-        if (this.fsm.isBusy()) {
-            this.fsm.update(this);
-        } else {
-            this.decideNextAction({
-                tick, 
-                worldTime, 
-                hour: worldTime.getHours(),
-                isLateNight: (worldTime.getHours() >= 23 || worldTime.getHours() < 5),
-                isMealTime: [8, 12, 18].includes(worldTime.getHours()),
-                isWorkShift: this.isWorkShift(worldTime),
-                isBusinessOpen: (worldTime.getHours() >= 9 && worldTime.getHours() < 21),
-                thresholds: this.thresholds,
-                persona: this.persona,
-                currentLocation: worldGraph.nodes[this.locationId],
-                currentLocationKey: this.locationId,
-                PRIORITY_EMERGENCY: 1000,
-                PRIORITY_HIGH: 500,
-                PRIORITY_MEDIUM: 200,
-                PRIORITY_LOW: 10
-            });
-        }
-    } else {
-        this._handleMovement();
-    }
-  }
-
-  decideNextAction(context) {
-    // DOOM LOOP FIX: Sleep Consistency
-    if (this.state === 'fsm_sleeping') {
-        const IS_STARVING = this.hunger > 95; 
-        const HAS_SAFE_ENERGY = this.energy > 30; 
-        const IS_FULLY_RESTED = this.energy >= 100;
-        const IS_HUNGRY = this.hunger > 90;
-
-        // If very low energy and not literally starving, keep sleeping
-        if (!HAS_SAFE_ENERGY && !IS_STARVING) return;
-        // If not fully rested and not hungry, keep sleeping
-        if (!IS_FULLY_RESTED && !IS_HUNGRY && !IS_STARVING) return;
-    }
-
-    // DOOM LOOP FIX: Critical Hunger Override
-    // If starving, bypass logic that might prioritize work/idle activities
-    if (this.hunger > 90 && this.state !== 'fsm_eating') {
-        // Rely on scoring to naturally pick up eating if we allow it to proceed,
-        // but if we are here, we are not sleeping. 
-        // We will fall through to PriorityQueue logic, but we need to ensure eating wins.
-        // The transitionToState changes below ensure we can BREAK out of work.
-    }
-
-    const potentialActions = new PriorityQueue((a, b) => b.score - a.score);
-
-    try {
-        scoreAcquireHousing(this, context, potentialActions);
-        scoreSleep(this, context, potentialActions);
-        scoreEatAndShop(this, context, potentialActions);
-        scoreWork(this, context, potentialActions);
-        
-        potentialActions.push({
-            name: 'fsm_idle',
-            score: 1, 
-            priority: 0,
-            target: this.locationId,
-            reason: 'Bored',
-            detailedReason: 'Nothing better to do'
-        });
-
-        if (potentialActions.isEmpty()) {
-            potentialActions.push({
-                 name: 'fsm_idle',
-                 score: 1,
-                 priority: 0,
-                 target: this.locationId,
-                 reason: 'Error Recovery',
-                 detailedReason: 'Scorer failure'
-            });
-        }
-
-        const bestAction = potentialActions.peek();
-
-        if (bestAction) {
-            this.transition(bestAction);
-        } else {
-            logger.error(`[SCORER] Agent ${this.id} has NO actions after scoring!`);
-        }
-
-    } catch (err) {
-        logger.error(`CRITICAL SCORER CRASH for ${this.name}: ${err.message}`, { stack: err.stack });
-        this.currentAction = { name: 'ERROR_RECOVERY', reason: 'Crash Recovery' };
-    }
-  }
-
-  transition(action) {
-      if (action.target && action.target !== this.locationId) {
-          this.destinationId = action.target;
-          this.fsm.transitionTo('fsm_in_transit', { 
-              destination: action.target, 
-              nextState: action.name, 
-              reason: action.reason
-          });
-      } else {
-          this.fsm.transitionTo(action.name, {
-              target: action.target,
-              reason: action.reason,
-              expectedDuration: action.expectedDuration
-          });
-      }
-      this.currentAction = action;
   }
 
   isWorkShift(worldTime) {
@@ -436,24 +325,6 @@ class Agent {
   _processSenses(worldState) {}
   _updateStatusEffectsStub() {} 
 
-  _handleMovement() {
-      if (this.travelTimer > 0) {
-          this.travelTimer--;
-          return;
-      }
-      this.inTransit = false;
-      this.locationId = this.destinationId;
-      this.destinationId = null;
-      
-      const pendingState = this.fsm.pendingNextState;
-      if (pendingState) {
-          this.fsm.transitionTo(pendingState, { reason: 'Arrived at destination' });
-          this.fsm.pendingNextState = null;
-      } else {
-          this.fsm.transitionTo('fsm_idle');
-      }
-  }
-
   clampStats() {
       this.hunger = Math.max(0, Math.min(100, this.hunger ?? 0));
       this.social = Math.max(0, Math.min(100, this.social ?? 0));
@@ -518,35 +389,6 @@ class Agent {
     return this.intentionStack[this.intentionStack.length - 1];
   }
 
-  pushIntention(intention, currentTick) {
-    if (!this.intentionStack) this.intentionStack = [];
-    if (this.intentionStack.length >= AGENT_CONFIG.MAX_INTENTION_DEPTH) this.intentionStack.shift(); 
-    const currentIntention = this.getActiveIntention();
-    if (currentIntention) currentIntention.suspended = true;
-    intention.initiatedTick = currentTick;
-    intention.suspended = false;
-    intention.context = intention.context || {}; 
-    this.intentionStack.push(intention);
-  }
-
-  popIntention() {
-    if (!this.intentionStack || this.intentionStack.length === 0) return;
-    this.intentionStack.pop(); 
-    const newActiveIntention = this.getActiveIntention();
-    if (newActiveIntention) newActiveIntention.suspended = false;
-  }
-
-  updateIntentionTimeouts(currentTick) {
-    if (!this.intentionStack || this.intentionStack.length === 0) return;
-    this.intentionStack = this.intentionStack.filter(intention => {
-      if (intention.suspended) {
-        const ticksSuspended = currentTick - (intention.initiatedTick || 0);
-        if (ticksSuspended > AGENT_CONFIG.INTENTION_TIMEOUT_TICKS) return false; 
-      }
-      return true; 
-    });
-  }
-
   getConsumableFoodItem() { return getConsumableFoodItem(this); }
   consumeItem(itemId) { return consumeItem(this, itemId); }
   hasHobbyItem(skillTag) { return hasHobbyItem(this); }
@@ -580,130 +422,9 @@ class Agent {
         history: history 
     };
   }
-
-  transitionToState(newState) {
-    if (this.state === newState) return { changed: false, walOp: null };
-    
-    this.clampStats();
-    const currentTick = this.matrix?.tickCount || 0;
-    this.updateIntentionTimeouts(currentTick);
-
-    const isCommitted = (currentTick - (this.activityStartTick ?? 0)) < (this.minActivityDuration ?? 0);
-    
-    if (isCommitted) {
-      // FIX: Added fsm_eating and fsm_seek_healthcare to emergency list
-      const isEmergency = newState === 'fsm_sleeping' || newState === 'fsm_desperate' || newState === 'fsm_eating' || newState === 'fsm_seek_healthcare';
-      const isMovementGoal = newState === 'fsm_commuting' || newState === 'fsm_in_transit';
-      const isCurrentlyMoving = this.state === 'fsm_commuting' || this.state === 'fsm_in_transit';
-      if (!isEmergency && !isMovementGoal && !isCurrentlyMoving) {
-        return { changed: false, walOp: null };
-      }
-    }
-
-    let walOp = null;
-    const oldState = this.state; 
-    const currentDay = this.matrix?.worldTime?.getDay() || null;
-    const currentHour = this.matrix?.worldTime?.getHours() || null;
-    const oldLocationId = this.locationId; 
-    const socialPartnerId = this.lastSocialPartner; 
-
-    this.state = newState; 
-    
-    if (newState === 'fsm_sleeping' || newState.startsWith('fsm_working')) {
-        this.lastSocialPartner = null;
-    }
-
-    this.updateRoutineReinforcement(oldState, oldLocationId, currentDay, currentHour, currentTick, socialPartnerId);
-
-    const currentIntention = this.getActiveIntention();
-    if (currentIntention && !currentIntention.suspended && oldState === currentIntention.goal) {
-      this.popIntention();
-    }
-
-    if (oldState !== 'fsm_commuting' && oldState !== 'fsm_in_transit' && oldState !== 'fsm_idle') {
-        this.recordActivity(oldState);
-    }
-
-    let hourForActivity = 12; 
-    if (this.matrix?.worldTime) {
-      hourForActivity = new Date(this.matrix.worldTime).getHours();
-    }
-    this.updateCurrentActivity(newState, hourForActivity);
-
-    this.activityStartTick = currentTick;
-
-    let intentionDuration = 0;
-    if (currentIntention && currentIntention.context && currentIntention.context.duration) {
-        intentionDuration = Math.ceil(currentIntention.context.duration * 5);
-    }
-
-    if (intentionDuration > 0) {
-        this.minActivityDuration = intentionDuration;
-    } else {
-        switch (newState) {
-          case 'fsm_eating': this.minActivityDuration = 3; break;
-          case 'fsm_socializing': this.minActivityDuration = 5; break;
-          case 'fsm_recreation': this.minActivityDuration = 5; break; 
-          case 'fsm_working_office':
-          case 'fsm_working_police':
-          case 'fsm_working_teacher':
-          case 'fsm_working_service': this.minActivityDuration = 32; break; // Reduced from 48 to 32 (8 hours)
-          case 'fsm_sleeping': this.minActivityDuration = 24; break; 
-          case 'fsm_maintenance': this.minActivityDuration = 4; break;
-          case 'fsm_shopping': this.minActivityDuration = 4; break;
-          case 'fsm_desperate': this.minActivityDuration = 12; break;
-          case 'fsm_seek_healthcare': this.minActivityDuration = 10; break; 
-          case 'fsm_acquire_housing': this.minActivityDuration = 6; break; 
-          default: this.minActivityDuration = 0;
-        }
-    }
-    
-    if (newState === 'fsm_eating') {
-        const foodItem = this.getConsumableFoodItem();
-        if (foodItem) {
-            this.consumeItem(foodItem.itemId);
-            walOp = { op: 'AGENT_CONSUME_FOOD', data: { itemId: foodItem.itemId } };
-            
-            const h = this.matrix?.worldTime ? new Date(this.matrix.worldTime).getHours() : 12;
-            const isMealTime = (h >= 7 && h <= 9) || (h >= 12 && h <= 14) || (h >= 18 && h <= 20);
-            
-            // FIX: Guaranteed hunger reduction regardless of meal time
-            this.hunger = Math.max(0, this.hunger - 25); 
-
-            if (isMealTime) {
-                this.mood = Math.min(100, this.mood + 5); 
-                this.stress = Math.max(0, this.stress - 5);
-                this.hunger = Math.max(0, this.hunger - 10); // Bonus reduction for proper meal times
-            }
-        } else {
-            this.state = 'fsm_idle';
-            this.minActivityDuration = 0;
-            return this.transitionToState('fsm_idle'); 
-        }
-    }
-    
-    if (newState === 'fsm_socializing') this.socializingTicks = 0;
-
-    if (newState === 'fsm_homeless') {
-      this.homeLocationId = null;
-      this.homeNode = null; 
-      this.rent_cost = 0;
-      this.rentFailures = 0; 
-    }
-    
-    if (newState !== 'fsm_commuting' && newState !== 'fsm_in_transit') {
-      this.targetLocationId = null;
-      this.transitFrom = null;
-      this.transitTo = null;
-      this.travelTimer = 0;
-    }
-    
-    return { changed: true, walOp: walOp };
-  }
   
   serialize() {
     const sanitize = (val) => val === undefined ? null : val;
-    const activeIntention = this.getActiveIntention();
     this.clampStats();
 
     return {
@@ -726,7 +447,7 @@ class Agent {
       workLocationId: sanitize(this.workLocationId),
       rent_cost: sanitize(this.rent_cost),
       targetLocationId: sanitize(this.targetLocationId),
-      currentGoal: sanitize(activeIntention ? activeIntention.goal : null),
+      // currentGoal: sanitize(activeIntention ? activeIntention.goal : null), // Removed
       job: this.job, 
       interests: this.interests,
       currentActivity: sanitize(this.currentActivity),
