@@ -1,5 +1,13 @@
 # ============================================================================
 # WORLD KNOWLEDGE & PLACES
+# ----------------------------------------------------------------------------
+# "Source of Truth" for physical world definitions, sub-locations, 
+# and sensory details (smells/sounds).
+#
+# MOVED: Prices -> economics.yaml
+# MOVED: Events -> events.yaml
+# MOVED: Weather -> weather_patterns.yaml
+# MOVED: Social/Slang -> culture.yaml
 # ============================================================================
 
 # ============================================================================
@@ -170,6 +178,70 @@ consistent_locations:
     - "Neighborhood Laundromat"
     - "24 Hour Laundry"
     - "Soap Opera Laundromat"
+
+  library:
+    - "New York Public Library (Main)"
+    - "Jefferson Market Library"
+    - "Brooklyn Public Library"
+    - "Local Branch Library"
+  
+  hospital:
+    - "Bellevue Hospital"
+    - "Mount Sinai"
+    - "Lenox Hill Hospital"
+    - "New York-Presbyterian"
+    - "St. Vincent's Hospital"
+  
+  clinic:
+    - "City Clinic"
+    - "Neighborhood Health Center"
+    - "Dr. Zizmor's Office"
+    - "Planned Parenthood"
+  
+  salon:
+    - "Supercuts"
+    - "Astor Place Hairstylists"
+    - "Bumble and Bumble"
+    - "Jean Louis David"
+    - "Neighborhood Barber"
+  
+  bank:
+    - "Chase Manhattan Bank"
+    - "Citibank"
+    - "Chemical Bank"
+    - "Republic National Bank"
+    - "Dime Savings Bank"
+  
+  school:
+    - "P.S. 118"
+    - "Stuyvesant High School"
+    - "LaGuardia High School"
+    - "Washington Irving High School"
+    - "Local Elementary"
+  
+  church:
+    - "St. Patrick's Cathedral"
+    - "Trinity Church"
+    - "Riverside Church"
+    - "Cathedral of St. John the Divine"
+    - "Neighborhood Church"
+  
+  community_center:
+    - "92nd Street Y"
+    - "LGBT Community Center"
+    - "Local Rec Center"
+    - "Boys & Girls Club"
+  
+  funeral_home:
+    - "Frank E. Campbell"
+    - "Neighborhood Funeral Home"
+    - "Riverside Memorial Chapel"
+  
+  mall:
+    - "Manhattan Mall"
+    - "Kings Plaza"
+    - "Queens Center"
+    - "South Street Seaport"
 
 # ============================================================================
 # SUB-LOCATIONS WITHIN LOCATION TYPES
@@ -526,3 +598,288 @@ places:
     - 'back door'
     - 'loading dock'
     - 'shadowy corner'
+
+  community_center:
+    - 'meeting room'
+    - 'gym'
+    - 'bulletin board'
+    - 'front desk'
+    - 'kitchen'
+    - 'craft room'
+  
+  funeral_home:
+    - 'chapel'
+    - 'viewing room'
+    - 'lobby'
+    - 'office'
+    - 'flower display'
+
+# ============================================================================
+# DISCOVERABLE ACTIVITIES BY LOCATION
+# ============================================================================
+discoverable_activities:
+  home: 
+    - 'use internet'
+    - 'talking on phone'
+    - 'cleaning home'
+    - 'relaxing'
+    - 'reading book'
+    - 'watching tv'
+    - 'playing video games'
+    - 'cooking'
+    - 'listening to music'
+    - 'napping'
+    - 'doing laundry'
+  
+  office: 
+    - 'getting snacks'
+    - 'gossiping'
+    - 'checking email'
+    - 'taking break'
+  
+  bar: 
+    - 'socializing'
+    - 'playing pool'
+    - 'play arcade game'
+    - 'going out'
+    - 'watching sports'
+    - 'playing darts'
+    - 'smoking cigarette'
+    - 'flirting'
+  
+  restaurant: 
+    - 'socializing'
+    - 'eating meal'
+    - 'going out'
+    - 'meeting friend'
+    - 'going on date'
+  
+  gym: 
+    - 'working out'
+    - 'taking class'
+    - 'socializing'
+  
+  store: 
+    - 'shopping'
+    - 'getting snacks'
+    - 'running errands'
+  
+  park: 
+    - 'at park'
+    - 'taking walk'
+    - 'working out'
+    - 'socializing'
+    - 'reading book'
+    - 'walking dog'
+    - 'playing sports'
+    - 'people watching'
+  
+  coffee_shop: 
+    - 'get coffee'
+    - 'socializing'
+    - 'relaxing'
+    - 'reading book'
+    - 'studying'
+    - 'meeting friend'
+    - 'people watching'
+  
+  movie_theater: 
+    - 'watch movie'
+    - 'play arcade game'
+    - 'going on date'
+  
+  bookstore: 
+    - 'browse books'
+    - 'reading book'
+    - 'get coffee'
+    - 'socializing'
+  
+  arcade: 
+    - 'play arcade game'
+    - 'socializing'
+    - 'hanging out'
+  
+  library: 
+    - 'visit library'
+    - 'browse books'
+    - 'reading book'
+    - 'use internet'
+    - 'studying'
+  
+  museum: 
+    - 'visit museum'
+    - 'taking date'
+    - 'relaxing'
+  
+  venue: 
+    - 'go to venue'
+    - 'socializing'
+    - 'attending concert'
+    - 'dancing'
+  
+  internet_cafe: 
+    - 'use internet'
+    - 'get coffee'
+    - 'checking email'
+    - 'socializing'
+  
+  record_store:
+    - 'record shopping'
+    - 'browsing'
+    - 'socializing'
+    - 'listening to music'
+  
+  video_store:
+    - 'renting video'
+    - 'browsing'
+    - 'socializing'
+  
+  laundromat:
+    - 'doing laundry'
+    - 'reading'
+    - 'people watching'
+  
+  street:
+    - 'taking walk'
+    - 'traveling'
+    - 'people watching'
+    - 'smoking cigarette'
+    - 'using payphone'
+    - 'window shopping'
+  
+  subway:
+    - 'traveling'
+    - 'reading'
+    - 'people watching'
+  
+  hospital:
+    - 'in hospital'
+    - 'seeing doctor'
+    - 'visiting patient'
+  
+  clinic:
+    - 'seeing doctor'
+    - 'at dentist'
+    - 'waiting'
+  
+  salon:
+    - 'getting haircut'
+    - 'socializing'
+  
+  bank:
+    - 'banking'
+    - 'waiting in line'
+  
+  theater:
+    - 'attending theater'
+    - 'watching performance'
+  
+  comic_shop:
+    - 'comic book shopping'
+    - 'socializing'
+    - 'gaming'
+
+# ============================================================================
+# SMELLS & SOUNDS (QUALITATIVE ATMOSPHERE)
+# ============================================================================
+nyc_smells:
+  street:
+    - 'hot asphalt and exhaust fumes'
+    - 'hot dog cart with onions'
+    - 'garbage on hot day'
+    - 'fresh pretzels'
+    - 'subway steam and tar'
+    - 'roasting chestnuts in winter'
+    - 'pizza from open door'
+    - "someone's perfume/cologne"
+    - 'cigarette smoke'
+    - 'rain on concrete'
+    - 'bakery exhaust vent'
+    - 'fish market'
+  
+  subway:
+    - 'stale air and brake dust'
+    - 'urine and cleaning solution'
+    - "someone's fast food"
+    - "homeless person's body odor"
+    - 'perfume overload in crowded car'
+    - 'electrical burning smell'
+    - 'wet cement'
+  
+  bar:
+    - 'spilled beer and cigarettes'
+    - 'stale smoke absorbed in everything'
+    - 'cheap cologne and desperation'
+    - 'popcorn from machine'
+    - 'urinal cakes from bathroom'
+  
+  coffee_shop:
+    - 'fresh ground coffee beans'
+    - 'steamed milk'
+    - 'pastries baking'
+    - 'old books and paper'
+  
+  home:
+    - 'someone cooking in another apartment'
+    - 'radiator heat and dust'
+    - 'old building mustiness'
+    - 'cleaning products'
+    - "neighbor's cigarette smoke"
+  
+  restaurant:
+    - 'garlic and olive oil'
+    - 'fresh bread'
+    - 'grilling meat'
+    - 'spices and seasonings'
+
+nyc_sounds:
+  street:
+    - 'car horns honking constantly'
+    - 'jackhammer from construction'
+    - 'police siren wailing past'
+    - 'ambulance racing through'
+    - 'bus brakes hissing'
+    - 'taxi dispatch radio crackling'
+    - 'people yelling in various languages'
+    - 'street performer playing music'
+    - 'skateboard wheels on pavement'
+    - 'pigeons cooing and flapping'
+    - 'steam hissing from manhole'
+    - 'car alarms going off'
+  
+  subway:
+    - 'train screeching into station'
+    - 'automated "stand clear of closing doors"'
+    - 'busker playing saxophone'
+    - 'token booth clerk on microphone'
+    - 'trains rumbling overhead/below'
+    - 'turnstile clicking'
+    - 'shoes on metal stairs echoing'
+  
+  bar:
+    - 'jukebox blaring over conversation'
+    - 'pool balls cracking'
+    - 'glasses clinking'
+    - 'bartender shaking cocktails'
+    - 'sports commentator on TV'
+    - 'people cheering at game'
+    - 'slot machine dinging'
+  
+  home:
+    - "neighbor's TV through thin walls"
+    - 'couple arguing upstairs'
+    - 'footsteps above'
+    - 'radiator clanking and hissing'
+    - 'car alarm outside window'
+    - 'dial-up modem connecting'
+    - 'phone ringing'
+    - 'answering machine beep'
+  
+  office:
+    - 'keyboards clacking'
+    - 'phones ringing constantly'
+    - 'fax machine beeping'
+    - 'printer jamming'
+    - 'elevator dinging'
+    - 'water cooler gurgling'
+    - 'whispered gossip'

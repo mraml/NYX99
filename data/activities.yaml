@@ -9,7 +9,7 @@
 activities:
   - name: 'sleeping'
     base_score: 0
-    duration_ticks: [360, 600]
+    duration_ticks: [32, 48] # 8-12 hours
     location_types: ['home']
     actions:
       - 'sleeping soundly in bed'
@@ -24,7 +24,7 @@ activities:
 
   - name: 'napping'
     base_score: 3
-    duration_ticks: [20, 60]
+    duration_ticks: [4, 8] # 1-2 hours
     location_types: ['home']
     actions:
       - 'dozing on couch'
@@ -36,7 +36,7 @@ activities:
 
   - name: 'eating meal'
     base_score: 10
-    duration_ticks: [15, 30]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['home', 'restaurant']
     actions:
       - 'eating cereal at kitchen table'
@@ -56,7 +56,7 @@ activities:
 
   - name: 'eating breakfast'
     base_score: 8
-    duration_ticks: [10, 20]
+    duration_ticks: [2, 4]
     location_types: ['home', 'restaurant', 'coffee_shop']
     actions:
       - 'eating cereal while half-awake'
@@ -69,7 +69,7 @@ activities:
 
   - name: 'making coffee'
     base_score: 5
-    duration_ticks: [5, 10]
+    duration_ticks: [1, 2] # 15-30 mins
     location_types: ['home', 'office']
     actions:
       - 'brewing pot of coffee'
@@ -77,11 +77,11 @@ activities:
       - 'grinding beans'
       - 'pouring coffee into travel mug'
     interest_tags: ['food']
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_eating'] # Can be part of eating routine too
 
   - name: 'taking shower'
     base_score: 5
-    duration_ticks: [10, 20]
+    duration_ticks: [1, 2]
     location_types: ['home']
     actions:
       - 'showering in bathroom'
@@ -91,11 +91,11 @@ activities:
       - 'letting hot water run'
       - 'shaving in shower'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_maintenance']
 
   - name: 'brushing teeth'
     base_score: 5
-    duration_ticks: [3, 5]
+    duration_ticks: [1, 1]
     location_types: ['home']
     actions:
       - 'brushing teeth at sink'
@@ -103,11 +103,11 @@ activities:
       - 'flossing teeth'
       - 'checking teeth in mirror'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_maintenance']
 
   - name: 'getting dressed'
     base_score: 4
-    duration_ticks: [5, 15]
+    duration_ticks: [1, 1]
     location_types: ['home']
     actions:
       - 'picking out clothes from closet'
@@ -121,7 +121,7 @@ activities:
 
   - name: 'doing laundry'
     base_score: 2
-    duration_ticks: [60, 90]
+    duration_ticks: [4, 6]
     location_types: ['home', 'laundromat']
     actions:
       - 'loading washing machine'
@@ -135,7 +135,7 @@ activities:
 
   - name: 'working (office)'
     base_score: 0
-    duration_ticks: [480, 540]
+    duration_ticks: [32, 36] # 8-9 hours
     location_types: ['office']
     actions:
       - 'typing at their desk'
@@ -157,7 +157,7 @@ activities:
 
   - name: 'patrolling (police)'
     base_score: 0
-    duration_ticks: [480, 540]
+    duration_ticks: [32, 36]
     location_types: ['street']
     actions:
       - 'walking the beat on sidewalk'
@@ -172,7 +172,7 @@ activities:
 
   - name: 'teaching class (teacher)'
     base_score: 0
-    duration_ticks: [45, 90]
+    duration_ticks: [32, 36]
     location_types: ['school']
     actions:
       - 'writing on chalkboard'
@@ -185,7 +185,7 @@ activities:
 
   - name: 'working (service)'
     base_score: 0
-    duration_ticks: [360, 540]
+    duration_ticks: [24, 32] # 6-8 hours
     location_types: ['bar', 'restaurant', 'store', 'coffee_shop']
     actions:
       - 'serving a customer'
@@ -244,7 +244,7 @@ activities:
 
   - name: 'relaxing'
     base_score: 8
-    duration_ticks: [30, 180]
+    duration_ticks: [2, 8] # 30 mins - 2 hours
     location_types: ['home', 'park', 'coffee_shop', 'library']
     actions:
       - 'watching TV on couch'
@@ -260,11 +260,11 @@ activities:
       - 'organizing CD collection'
       - 'looking at photo album'
     interest_tags: ['tv', 'movies', 'music', 'reading', 'quiet', 'technology']
-    tags: ['fsm_idle', 'fsm_self_soothe'] # Passive, so it stays fsm_idle
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # Passive, so it stays fsm_idle
 
   - name: 'watching tv'
     base_score: 15
-    duration_ticks: [30, 180]
+    duration_ticks: [4, 8] # 1-2 hours
     location_types: ['home', 'bar']
     actions:
       - 'watching sitcom on NBC'
@@ -277,11 +277,11 @@ activities:
       - 'watching MTV music videos'
       - 'zoning out to infomercials'
     interest_tags: ['tv']
-    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_hunker_down'] # Passive, so it stays fsm_idle
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_hunker_down', 'fsm_recreation'] # Passive, so it stays fsm_idle
 
   - name: 'playing video games'
     base_score: 20
-    duration_ticks: [45, 180]
+    duration_ticks: [4, 12] # 1-3 hours
     location_types: ['home']
     actions:
       - 'playing N64 on TV'
@@ -297,7 +297,7 @@ activities:
 
   - name: 'cleaning home'
     base_score: 2
-    duration_ticks: [20, 40]
+    duration_ticks: [2, 4]
     location_types: ['home']
     actions:
       - 'vacuuming the living room'
@@ -313,7 +313,7 @@ activities:
 
   - name: 'use internet'
     base_score: 15
-    duration_ticks: [30, 120]
+    duration_ticks: [2, 8]
     location_types: ['home', 'internet_cafe', 'library']
     actions:
       - 'hearing dial-up screech at home'
@@ -335,7 +335,7 @@ activities:
 
   - name: 'checking email'
     base_score: 10
-    duration_ticks: [10, 30]
+    duration_ticks: [1, 2]
     location_types: ['home', 'office', 'internet_cafe']
     actions:
       - 'logging into Hotmail'
@@ -344,11 +344,11 @@ activities:
       - 'forwarding chain email'
       - 'typing reply slowly'
     interest_tags: ['technology', 'social']
-    tags: ['fsm_idle', 'fsm_working_office'] # Can be idle (home) or work
+    tags: ['fsm_idle', 'fsm_working_office', 'fsm_recreation'] # Can be idle (home) or work
 
   - name: 'socializing'
     base_score: 20
-    duration_ticks: [60, 240]
+    duration_ticks: [4, 16] # 1-4 hours
     location_types: ['bar', 'restaurant', 'park', 'coffee_shop', 'venue', 'home']
     actions:
       - 'chatting with someone at bar counter'
@@ -366,7 +366,7 @@ activities:
 
   - name: 'meeting friend'
     base_score: 30
-    duration_ticks: [60, 180]
+    duration_ticks: [4, 12] # 1-3 hours
     location_types: ['bar', 'restaurant', 'coffee_shop', 'park']
     actions:
       - 'waiting for friend at cafe table'
@@ -382,7 +382,7 @@ activities:
 
   - name: 'going on date'
     base_score: 40
-    duration_ticks: [90, 240]
+    duration_ticks: [6, 16] # 1.5 - 4 hours
     location_types: ['restaurant', 'movie_theater', 'bar', 'coffee_shop']
     actions:
       - 'nervously waiting at restaurant table'
@@ -398,7 +398,7 @@ activities:
 
   - name: 'going out'
     base_score: 25
-    duration_ticks: [120, 300]
+    duration_ticks: [8, 20] # 2-5 hours
     location_types: ['bar', 'venue', 'restaurant']
     actions:
       - 'having drinks at bar counter'
@@ -413,7 +413,7 @@ activities:
 
   - name: 'throwing party'
     base_score: 35
-    duration_ticks: [180, 360]
+    duration_ticks: [12, 24] # 3-6 hours
     location_types: ['home']
     actions:
       - 'greeting guests at door'
@@ -428,7 +428,7 @@ activities:
 
   - name: 'attending party'
     base_score: 30
-    duration_ticks: [120, 300]
+    duration_ticks: [8, 20] # 2-5 hours
     location_types: ['home', 'venue']
     actions:
       - 'mingling with red cup'
@@ -442,7 +442,7 @@ activities:
 
   - name: 'talking on phone'
     base_score: 12
-    duration_ticks: [15, 60]
+    duration_ticks: [1, 4] # 15-60 mins
     location_types: ['home']
     actions:
       - 'chatting on landline phone'
@@ -453,11 +453,11 @@ activities:
       - 'lying on bed talking'
       - 'checking answering machine'
     interest_tags: ['social']
-    tags: ['fsm_socializing'] # This is social, but not really 'recreation'
+    tags: ['fsm_socializing', 'fsm_recreation'] # This is social, but not really 'recreation'
 
   - name: 'using payphone'
     base_score: 5
-    duration_ticks: [5, 15]
+    duration_ticks: [1, 1]
     location_types: ['street']
     actions:
       - 'inserting quarters in payphone'
@@ -466,11 +466,11 @@ activities:
       - 'waiting for someone to answer'
       - 'shouting over street noise'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_socializing']
 
   - name: 'shopping'
     base_score: 5
-    duration_ticks: [30, 60]
+    duration_ticks: [2, 4]
     location_types: ['store']
     actions:
       - 'browsing grocery aisles'
@@ -485,7 +485,7 @@ activities:
 
   - name: 'window shopping'
     base_score: 8
-    duration_ticks: [20, 60]
+    duration_ticks: [2, 4]
     location_types: ['street', 'mall']
     actions:
       - 'looking at store windows'
@@ -497,7 +497,7 @@ activities:
 
   - name: 'getting snacks'
     base_score: 3
-    duration_ticks: [5, 10]
+    duration_ticks: [1, 1]
     location_types: ['office', 'store']
     actions:
       - 'getting chips from office vending machine'
@@ -511,7 +511,7 @@ activities:
 
   - name: 'get coffee'
     base_score: 10
-    duration_ticks: [15, 45]
+    duration_ticks: [1, 3] # 15-45 mins
     location_types: ['coffee_shop', 'store', 'restaurant']
     actions:
       - 'ordering latte at coffee shop counter'
@@ -522,11 +522,11 @@ activities:
       - 'adding sugar and cream'
       - 'chatting with barista'
     interest_tags: ['food']
-    tags: ['fsm_eating', 'fsm_socializing'] # Can be for food or social
+    tags: ['fsm_eating', 'fsm_socializing', 'fsm_recreation'] # Can be for food or social
 
   - name: 'smoking cigarette'
     base_score: 6
-    duration_ticks: [5, 10]
+    duration_ticks: [1, 1]
     location_types: ['street', 'bar', 'home']
     actions:
       - 'smoking outside building'
@@ -536,11 +536,11 @@ activities:
       - 'sharing lighter'
       - 'stubbing out cigarette'
     interest_tags: ['social']
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_recreation']
 
   - name: 'working out'
     base_score: 10
-    duration_ticks: [45, 90]
+    duration_ticks: [3, 6] # 45-90 mins
     location_types: ['gym', 'park']
     actions:
       - 'running on treadmill at gym'
@@ -555,7 +555,7 @@ activities:
 
   - name: 'taking walk'
     base_score: 8
-    duration_ticks: [20, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['street', 'park']
     actions:
       - 'walking briskly down sidewalk'
@@ -569,7 +569,7 @@ activities:
 
   - name: 'walking dog'
     base_score: 12
-    duration_ticks: [20, 40]
+    duration_ticks: [2, 3] # 30-45 mins
     location_types: ['street', 'park']
     actions:
       - 'walking dog on leash'
@@ -582,7 +582,7 @@ activities:
 
   - name: 'at park'
     base_score: 12
-    duration_ticks: [30, 120]
+    duration_ticks: [2, 8] # 30 mins - 2 hours
     location_types: ['park']
     actions:
       - 'sitting on park bench watching people'
@@ -598,7 +598,7 @@ activities:
 
   - name: 'playing sports'
     base_score: 18
-    duration_ticks: [60, 120]
+    duration_ticks: [4, 8] # 1-2 hours
     location_types: ['park', 'gym']
     actions:
       - 'playing pickup basketball'
@@ -612,7 +612,7 @@ activities:
 
   - name: 'watch movie'
     base_score: 30
-    duration_ticks: [120, 180]
+    duration_ticks: [8, 12] # 2-3 hours
     location_types: ['movie_theater']
     actions:
       - 'buying ticket in lobby'
@@ -626,7 +626,7 @@ activities:
 
   - name: 'renting video'
     base_score: 15
-    duration_ticks: [20, 45]
+    duration_ticks: [2, 3] # 30-45 mins
     location_types: ['video_store']
     actions:
       - 'browsing new releases at Blockbuster'
@@ -640,7 +640,7 @@ activities:
 
   - name: 'watching rented movie'
     base_score: 25
-    duration_ticks: [120, 180]
+    duration_ticks: [8, 12] # 2-3 hours
     location_types: ['home']
     actions:
       - 'watching VHS on couch'
@@ -653,7 +653,7 @@ activities:
 
   - name: 'browse books'
     base_score: 15
-    duration_ticks: [30, 90]
+    duration_ticks: [2, 6] # 30-90 mins
     location_types: ['bookstore', 'library']
     actions:
       - 'browsing new releases near bookstore entrance'
@@ -669,7 +669,7 @@ activities:
 
   - name: 'play arcade game'
     base_score: 25
-    duration_ticks: [30, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['arcade', 'bar', 'movie_theater']
     actions:
       - 'playing Street Fighter II cabinet'
@@ -685,7 +685,7 @@ activities:
 
   - name: 'reading book'
     base_score: 18
-    duration_ticks: [45, 120]
+    duration_ticks: [3, 8] # 45 mins - 2 hours
     location_types: ['home', 'library', 'park', 'coffee_shop']
     actions:
       - 'reading novel on couch at home'
@@ -696,11 +696,11 @@ activities:
       - 'turning pages carefully'
       - 'using bookmark'
     interest_tags: ['reading']
-    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive, so it stays fsm_idle
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] # Added recreation
 
   - name: 'reading newspaper'
     base_score: 12
-    duration_ticks: [15, 45]
+    duration_ticks: [1, 3] # 15-45 mins
     location_types: ['home', 'coffee_shop', 'subway', 'restaurant']
     actions:
       - 'reading New York Times at table'
@@ -710,11 +710,11 @@ activities:
       - 'folding newspaper awkwardly'
       - 'ink smudging on fingers'
     interest_tags: ['reading']
-    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation'] 
 
   - name: 'listening to music'
     base_score: 16
-    duration_ticks: [30, 120]
+    duration_ticks: [2, 8] # 30 mins - 2 hours
     location_types: ['home', 'street']
     actions:
       - 'listening to CD on stereo'
@@ -725,11 +725,11 @@ activities:
       - 'rewinding cassette tape'
       - 'skipping CD track'
     interest_tags: ['music']
-    tags: ['fsm_idle', 'fsm_self_soothe'] # This is passive
+    tags: ['fsm_idle', 'fsm_self_soothe', 'fsm_recreation']
 
   - name: 'playing pool'
     base_score: 22
-    duration_ticks: [45, 90]
+    duration_ticks: [3, 6] # 45-90 mins
     location_types: ['bar']
     actions:
       - 'lining up a shot at pool table'
@@ -743,7 +743,7 @@ activities:
 
   - name: 'playing darts'
     base_score: 18
-    duration_ticks: [30, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['bar']
     actions:
       - 'throwing darts at board'
@@ -755,7 +755,7 @@ activities:
 
   - name: 'visit library'
     base_score: 12
-    duration_ticks: [60, 180]
+    duration_ticks: [4, 12] # 1-3 hours
     location_types: ['library']
     actions:
       - 'browsing shelves in stacks'
@@ -769,7 +769,7 @@ activities:
 
   - name: 'visit museum'
     base_score: 18
-    duration_ticks: [90, 240]
+    duration_ticks: [6, 16] # 1.5 - 4 hours
     location_types: ['museum']
     actions:
       - 'looking at exhibits in exhibit hall'
@@ -784,7 +784,7 @@ activities:
 
   - name: 'attending concert'
     base_score: 40
-    duration_ticks: [120, 240]
+    duration_ticks: [8, 16] # 2-4 hours
     location_types: ['venue']
     actions:
       - 'moshing near stage'
@@ -798,7 +798,7 @@ activities:
 
   - name: 'go to venue'
     base_score: 35
-    duration_ticks: [120, 240]
+    duration_ticks: [8, 16] # 2-4 hours
     location_types: ['venue']
     actions:
       - 'watching band perform near stage'
@@ -813,7 +813,7 @@ activities:
 
   - name: 'attending class'
     base_score: 5
-    duration_ticks: [60, 120]
+    duration_ticks: [4, 8] # 1-2 hours
     location_types: ['school']
     actions:
       - 'taking notes in lecture hall'
@@ -826,7 +826,7 @@ activities:
 
   - name: 'studying'
     base_score: 8
-    duration_ticks: [60, 180]
+    duration_ticks: [4, 12] # 1-3 hours
     location_types: ['home', 'library', 'coffee_shop']
     actions:
       - 'studying at desk'
@@ -839,7 +839,7 @@ activities:
 
   - name: 'job hunting'
     base_score: 10
-    duration_ticks: [30, 120]
+    duration_ticks: [2, 8] # 30 mins - 2 hours
     location_types: ['home', 'library', 'internet_cafe']
     actions:
       - 'looking through classifieds'
@@ -852,7 +852,7 @@ activities:
 
   - name: 'job interview'
     base_score: 15
-    duration_ticks: [30, 90]
+    duration_ticks: [2, 6] # 30-90 mins
     location_types: ['office']
     actions:
       - 'waiting nervously in lobby'
@@ -865,7 +865,7 @@ activities:
 
   - name: 'seeing doctor'
     base_score: 5
-    duration_ticks: [30, 90]
+    duration_ticks: [2, 6] # 30-90 mins
     location_types: ['hospital', 'clinic']
     actions:
       - 'waiting in waiting room'
@@ -878,7 +878,7 @@ activities:
 
   - name: 'at dentist'
     base_score: 3
-    duration_ticks: [30, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['clinic']
     actions:
       - 'sitting in dentist chair'
@@ -891,7 +891,7 @@ activities:
 
   - name: 'getting haircut'
     base_score: 8
-    duration_ticks: [30, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['salon']
     actions:
       - 'sitting in barber chair'
@@ -900,11 +900,11 @@ activities:
       - 'checking mirror nervously'
       - 'tipping stylist'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_recreation']
 
   - name: 'banking'
     base_score: 4
-    duration_ticks: [15, 45]
+    duration_ticks: [1, 3] # 15-45 mins
     location_types: ['bank']
     actions:
       - 'waiting in line at bank'
@@ -917,7 +917,7 @@ activities:
 
   - name: 'attending religious service'
     base_score: 10
-    duration_ticks: [60, 120]
+    duration_ticks: [4, 8] # 1-2 hours
     location_types: ['church']
     actions:
       - 'sitting in pew'
@@ -930,7 +930,7 @@ activities:
 
   - name: 'volunteering'
     base_score: 15
-    duration_ticks: [120, 240]
+    duration_ticks: [8, 16] # 2-4 hours
     location_types: ['community_center', 'church', 'park']
     actions:
       - 'serving food at shelter'
@@ -943,7 +943,7 @@ activities:
 
   - name: 'attending protest'
     base_score: 20
-    duration_ticks: [60, 240]
+    duration_ticks: [4, 16] # 1-4 hours
     location_types: ['street', 'park']
     actions:
       - 'marching with sign'
@@ -956,7 +956,7 @@ activities:
 
   - name: 'attending support group'
     base_score: 12
-    duration_ticks: [60, 90]
+    duration_ticks: [4, 6] # 60-90 mins
     location_types: ['community_center', 'church']
     actions:
       - 'sitting in circle'
@@ -969,7 +969,7 @@ activities:
 
   - name: 'taking art class'
     base_score: 18
-    duration_ticks: [90, 180]
+    duration_ticks: [6, 12] # 1.5 - 3 hours
     location_types: ['community_center', 'studio']
     actions:
       - 'painting on canvas'
@@ -982,7 +982,7 @@ activities:
 
   - name: 'attending comedy show'
     base_score: 28
-    duration_ticks: [90, 150]
+    duration_ticks: [6, 10] # 90-150 mins
     location_types: ['venue', 'bar']
     actions:
       - 'laughing at jokes'
@@ -995,7 +995,7 @@ activities:
 
   - name: 'attending poetry reading'
     base_score: 16
-    duration_ticks: [60, 120]
+    duration_ticks: [4, 8] # 1-2 hours
     location_types: ['coffee_shop', 'bookstore', 'venue']
     actions:
       - 'listening to poet at mic'
@@ -1008,7 +1008,7 @@ activities:
 
   - name: 'attending theater'
     base_score: 32
-    duration_ticks: [120, 180]
+    duration_ticks: [8, 12] # 2-3 hours
     location_types: ['theater']
     actions:
       - 'watching play from seat'
@@ -1021,7 +1021,7 @@ activities:
 
   - name: 'taking dance class'
     base_score: 20
-    duration_ticks: [60, 90]
+    duration_ticks: [4, 6] # 60-90 mins
     location_types: ['studio', 'gym']
     actions:
       - 'learning choreography'
@@ -1034,7 +1034,7 @@ activities:
 
   - name: 'taking music lesson'
     base_score: 18
-    duration_ticks: [45, 60]
+    duration_ticks: [3, 4] # 45-60 mins
     location_types: ['home', 'studio']
     actions:
       - 'practicing scales'
@@ -1047,7 +1047,7 @@ activities:
 
   - name: 'band practice'
     base_score: 25
-    duration_ticks: [120, 180]
+    duration_ticks: [8, 12] # 2-3 hours
     location_types: ['garage', 'studio']
     actions:
       - 'jamming with bandmates'
@@ -1060,7 +1060,7 @@ activities:
 
   - name: 'photography'
     base_score: 20
-    duration_ticks: [60, 180]
+    duration_ticks: [4, 12] # 1-3 hours
     location_types: ['street', 'park', 'studio']
     actions:
       - 'taking photos around neighborhood'
@@ -1073,7 +1073,7 @@ activities:
 
   - name: 'antique shopping'
     base_score: 14
-    duration_ticks: [45, 120]
+    duration_ticks: [3, 8] # 45 mins - 2 hours
     location_types: ['store']
     actions:
       - 'browsing antique store'
@@ -1086,7 +1086,7 @@ activities:
 
   - name: 'thrift shopping'
     base_score: 16
-    duration_ticks: [45, 90]
+    duration_ticks: [3, 6] # 45-90 mins
     location_types: ['store']
     actions:
       - 'digging through racks'
@@ -1099,7 +1099,7 @@ activities:
 
   - name: 'record shopping'
     base_score: 22
-    duration_ticks: [30, 90]
+    duration_ticks: [2, 6] # 30-90 mins
     location_types: ['record_store']
     actions:
       - 'flipping through vinyl bins'
@@ -1112,7 +1112,7 @@ activities:
 
   - name: 'comic book shopping'
     base_score: 18
-    duration_ticks: [30, 90]
+    duration_ticks: [2, 6] # 30-90 mins
     location_types: ['comic_shop']
     actions:
       - 'browsing new releases'
@@ -1125,7 +1125,7 @@ activities:
 
   - name: 'people watching'
     base_score: 10
-    duration_ticks: [20, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['park', 'coffee_shop', 'street']
     actions:
       - 'observing passersby'
@@ -1138,7 +1138,7 @@ activities:
 
   - name: 'arguing'
     base_score: -5
-    duration_ticks: [10, 30]
+    duration_ticks: [1, 2]
     location_types: ['any']
     actions:
       - 'having heated discussion'
@@ -1151,7 +1151,7 @@ activities:
 
   - name: 'making up'
     base_score: 15
-    duration_ticks: [15, 45]
+    duration_ticks: [1, 3] # 15-45 mins
     location_types: ['home', 'coffee_shop', 'park']
     actions:
       - 'apologizing sincerely'
@@ -1164,7 +1164,7 @@ activities:
 
   - name: 'gossiping'
     base_score: 12
-    duration_ticks: [15, 45]
+    duration_ticks: [1, 3] # 15-45 mins
     location_types: ['home', 'coffee_shop', 'bar', 'office']
     actions:
       - 'whispering secrets'
@@ -1177,7 +1177,7 @@ activities:
 
   - name: 'flirting'
     base_score: 18
-    duration_ticks: [15, 60]
+    duration_ticks: [1, 4] # 15-60 mins
     location_types: ['bar', 'coffee_shop', 'party', 'venue']
     actions:
       - 'making eye contact'
@@ -1190,7 +1190,7 @@ activities:
 
   - name: 'breaking up'
     base_score: -30
-    duration_ticks: [30, 90]
+    duration_ticks: [2, 6] # 30-90 mins
     location_types: ['home', 'coffee_shop', 'restaurant']
     actions:
       - 'having difficult conversation'
@@ -1203,7 +1203,7 @@ activities:
 
   - name: 'moving apartments'
     base_score: -10
-    duration_ticks: [240, 480]
+    duration_ticks: [16, 32] # 4-8 hours
     location_types: ['home']
     actions:
       - 'packing boxes'
@@ -1212,11 +1212,11 @@ activities:
       - 'unpacking in new place'
       - 'arguing with movers'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_maintenance'] # <-- MAINTENANCE
 
   - name: 'apartment hunting'
     base_score: 5
-    duration_ticks: [120, 240]
+    duration_ticks: [8, 16] # 2-4 hours
     location_types: ['street']
     actions:
       - 'viewing apartment'
@@ -1225,11 +1225,11 @@ activities:
       - 'calculating if can afford rent'
       - 'calling about listing'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_acquire_housing'] # <-- HOUSING
 
   - name: 'paying bills'
     base_score: -5
-    duration_ticks: [15, 30]
+    duration_ticks: [1, 2] # 15-30 mins
     location_types: ['home']
     actions:
       - 'writing checks'
@@ -1238,11 +1238,11 @@ activities:
       - 'worrying about money'
       - 'putting stamps on bills'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_maintenance']
 
   - name: 'doing taxes'
     base_score: -15
-    duration_ticks: [120, 240]
+    duration_ticks: [8, 16] # 2-4 hours
     location_types: ['home']
     actions:
       - 'filling out forms'
@@ -1251,11 +1251,11 @@ activities:
       - 'stressed about deductions'
       - 'mailing to IRS'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_maintenance']
 
   - name: 'mug someone'
     base_score: -50
-    duration_ticks: [5, 10]
+    duration_ticks: [1, 1]
     location_types: ['street']
     actions:
       - 'looking for target in alley'
@@ -1264,11 +1264,11 @@ activities:
       - 'feeling adrenaline rush'
       - 'checking stolen wallet'
     interest_tags: []
-    tags: ['fsm_idle'] # An 'idle' (negative) action
+    tags: ['fsm_idle', 'fsm_desperate']
 
   - name: 'buy drugs'
     base_score: -20
-    duration_ticks: [5, 10]
+    duration_ticks: [1, 1]
     location_types: ['street', 'bar', 'park']
     actions:
       - 'meeting dealer on street corner'
@@ -1277,11 +1277,11 @@ activities:
       - 'feeling relieved and anxious'
       - 'hiding purchase'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_recreation']
 
   - name: 'sell drugs'
     base_score: -30
-    duration_ticks: [10, 60]
+    duration_ticks: [1, 4] # 15-60 mins
     location_types: ['street', 'park']
     actions:
       - 'waiting on corner'
@@ -1290,11 +1290,11 @@ activities:
       - 'counting money discreetly'
       - 'moving to new spot'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_working'] # Technically work for some
 
   - name: 'using drugs'
     base_score: -25
-    duration_ticks: [30, 120]
+    duration_ticks: [2, 8] # 30 mins - 2 hours
     location_types: ['home', 'bathroom', 'alley']
     actions:
       - 'getting high in bathroom'
@@ -1303,11 +1303,11 @@ activities:
       - 'hiding evidence'
       - 'coming down'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_recreation']
 
   - name: 'stealing'
     base_score: -40
-    duration_ticks: [5, 15]
+    duration_ticks: [1, 1]
     location_types: ['store']
     actions:
       - 'shoplifting from store'
@@ -1316,11 +1316,11 @@ activities:
       - 'leaving quickly'
       - 'heart pounding'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_desperate']
 
   - name: 'getting arrested'
     base_score: -100
-    duration_ticks: [30, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['street', 'store']
     actions:
       - 'being handcuffed'
@@ -1333,7 +1333,7 @@ activities:
 
   - name: 'jailed'
     base_score: -1000
-    duration_ticks: [1440, 2880]
+    duration_ticks: [96, 192] # 24-48 hours
     location_types: ['jail']
     actions:
       - 'sitting on cot in cell'
@@ -1349,7 +1349,7 @@ activities:
 
   - name: 'panhandling'
     base_score: -10
-    duration_ticks: [60, 240]
+    duration_ticks: [4, 16] # 1-4 hours
     location_types: ['street', 'subway']
     actions:
       - 'sitting with cup'
@@ -1358,11 +1358,11 @@ activities:
       - 'playing instrument for money'
       - 'thanking donors'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_desperate']
 
   - name: 'dumpster diving'
     base_score: -15
-    duration_ticks: [20, 60]
+    duration_ticks: [2, 4] # 30-60 mins
     location_types: ['alley']
     actions:
       - 'searching through trash'
@@ -1371,11 +1371,11 @@ activities:
       - 'looking for valuables'
       - 'checking behind restaurants'
     interest_tags: []
-    tags: ['fsm_idle']
+    tags: ['fsm_idle', 'fsm_desperate']
 
   - name: 'in hospital'
     base_score: -50
-    duration_ticks: [480, 2880]
+    duration_ticks: [32, 192] # 8-48 hours
     location_types: ['hospital']
     actions:
       - 'lying in hospital bed'
@@ -1385,11 +1385,11 @@ activities:
       - 'receiving visitors'
       - 'pressing call button'
     interest_tags: []
-    tags: ['fsm_idle'] # The 'idle' state in hospital
+    tags: ['fsm_idle', 'fsm_seek_healthcare'] # The 'idle' state in hospital
 
   - name: 'at funeral'
     base_score: -40
-    duration_ticks: [90, 180]
+    duration_ticks: [6, 12] # 1.5 - 3 hours
     location_types: ['church', 'funeral_home']
     actions:
       - 'mourning at service'
@@ -1402,7 +1402,7 @@ activities:
 
   - name: 'at wedding'
     base_score: 35
-    duration_ticks: [180, 300]
+    duration_ticks: [12, 20] # 3-5 hours
     location_types: ['church', 'venue', 'restaurant']
     actions:
       - 'watching ceremony'
@@ -1412,11 +1412,11 @@ activities:
       - 'making toast'
       - 'crying happy tears'
     interest_tags: ['social', 'celebration']
-    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+    tags: ['fsm_socializing', 'fsm_recreation']
 
   - name: 'baby shower'
     base_score: 20
-    duration_ticks: [120, 180]
+    duration_ticks: [8, 12] # 2-3 hours
     location_types: ['home', 'restaurant']
     actions:
       - 'playing shower games'
@@ -1425,11 +1425,11 @@ activities:
       - 'guessing baby name'
       - 'taking photos'
     interest_tags: ['social', 'celebration']
-    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+    tags: ['fsm_socializing', 'fsm_recreation']
 
   - name: 'birthday party'
     base_score: 30
-    duration_ticks: [120, 240]
+    duration_ticks: [8, 16] # 2-4 hours
     location_types: ['home', 'restaurant', 'bar']
     actions:
       - 'singing happy birthday'
@@ -1438,4 +1438,4 @@ activities:
       - 'playing party games'
       - 'taking group photo'
     interest_tags: ['social', 'celebration']
-    tags: ['fsm_socializing', 'fsm_recreation'] # <-- NOW RECREATION
+    tags: ['fsm_socializing', 'fsm_recreation']
