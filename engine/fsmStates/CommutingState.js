@@ -1,152 +1,81 @@
 import { BaseState } from './BaseState.js';
+import { Selector, Sequence, Condition, Action, Status } from '../BehaviorTreeCore.js';
 import worldGraph from '../../data/worldGraph.js';
 import eventBus from '../eventBus.js';
 
-/**
- * CommutingState.js
- * [REF] Stateless Flyweight Version
- * Critical Change: Pathing data moved to agent.stateContext
- */
-export class CommutingState extends BaseState {
-    
-    // [REF] Added agent param
-    enter(agent) {
-        super.enter(agent);
-        this._updateActivityFromState(agent);
-        
-        // [REF] Move stateful properties to agent.stateContext
-        agent.stateContext.travelCostPaid = false; 
-        agent.stateContext.isSneaking = false;
-        agent.stateContext.transportMode = 'transit'; 
-        agent.stateContext.currentPath = null;
-        
-        // Critical: Set user-facing display name for planning/start phase
-        // Since we can't set this.displayName on the shared instance, we set it on agent directly?
-        // Or we rely on _updateActivityFromState reading a constant?
-        // For now, let's assume agent.currentActivity is sufficient, as BaseState sets it.
-    }
-    
-    // [REF] Added agent param
-    tick(agent, hour, localEnv, worldState) {
-        // FIX: Standardize FSM state names used in transition/check
-        if (agent.state === 'fsm_commuting') {
-            return this._handleCommuting(agent);
-        } 
-        
-        if (agent.state === 'fsm_in_transit') {
-            return this._handleInTransit(agent, hour, localEnv, worldState);
+// === 1. LEAF NODES ===
+
+const Actions = {
+    // --- PLANNING ---
+    FindPath: (agent, context) => {
+        if (!agent.targetLocationId) {
+            // Error state: No target
+            if (agent.homeLocationId) agent.targetLocationId = agent.homeLocationId;
+            else return Actions.AbortCommute(agent, "No target and no home.");
         }
 
-        return { isDirty: false, walOp: null }; 
-    }
-
-    // [REF] Added agent param
-    exit(agent) {
-        super.exit(agent);
-        // Cleanup handled by FSM wiping stateContext, but explicit nulling is fine
-    }
-
-    // [REF] Added agent param
-    _validateDestinationForGoal(node, goal, agent) {
-        if (!node) return false;
-        switch (goal) {
-            case 'fsm_sleeping': return node.type === 'home';
-            case 'fsm_working':
-            case 'fsm_job_hunting': return node.key === agent.workLocationId; 
-            case 'fsm_acquire_housing': return node.type === 'home';
-            default:
-                return (node.affordances ?? []).some(a => a.action === goal);
+        if (agent.locationId === agent.targetLocationId) {
+            // Already there
+            return Status.SUCCESS; 
         }
-    }
 
-    // [REF] Added agent param
-    _handleCommuting(agent) {
-        // --- LOGIC FOR FINDING PATH AND SETTING UP TRANSIT ---
-
-        if (!agent.locationId) {
-            if (agent.homeLocationId) {
-                agent.locationId = agent.homeLocationId;
-                this.log(`[${agent.name}] Location was NULL. Grounding agent at home.`);
-            } else {
-                this.log(`[${agent.name}] Location was NULL and no home base found. Aborting travel.`);
-                // Clean intentions manually since we don't have FSM reference
-                agent.intentionStack = [];
-                return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-            }
+        // Calculate
+        const path = worldGraph.findPath(agent.locationId, agent.targetLocationId);
+        if (!path) {
+            return Actions.AbortCommute(agent, "No path found.");
         }
+
+        // Clean path (remove current node if present)
+        if (path.length > 0 && path[0] === agent.locationId) path.shift();
         
-        // [REF] Use stateContext.currentPath
-        if (!agent.stateContext.currentPath) {
-            // Check 1: Already at the target?
-            if (!agent.targetLocationId || agent.locationId === agent.targetLocationId) {
-                const intention = agent.intentionStack?.[agent.intentionStack.length - 1];
-                const goal = intention?.goal || 'fsm_idle';
-                if (agent.intentionStack) agent.intentionStack.pop(); 
-                
-                return { isDirty: true, walOp: { op: 'AGENT_ARRIVE', data: { location: agent.locationId, state: goal } }, nextState: goal };
-            }
+        agent.stateContext.currentPath = path;
+        return Status.SUCCESS;
+    },
 
-            // Pathfinding
-            agent.stateContext.currentPath = worldGraph.findPath(agent.locationId, agent.targetLocationId);
+    AbortCommute: (agent, reason) => {
+        if (agent.lod === 1) console.log(`[${agent.name}] Aborting commute: ${reason}`);
+        agent.intentionStack = []; 
+        return { isDirty: true, nextState: 'fsm_idle' };
+    },
 
-            if (!agent.stateContext.currentPath) {
-                this.log(`[${agent.name}] FAILED to find path from ${agent.locationId} to ${agent.targetLocationId}. Resetting.`);
-                return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-            }
-            
-            // Remove the starting node
-            if (agent.stateContext.currentPath.length > 0 && agent.stateContext.currentPath[0] === agent.locationId) {
-                agent.stateContext.currentPath.shift();
-            }
-        }
+    // --- EXECUTION ---
+    SetupNextHop: (agent) => {
+        const path = agent.stateContext.currentPath;
+        if (!path || path.length === 0) return Status.FAILURE; // Should be caught by Arrive logic
 
-        if ((agent.stateContext.currentPath?.length ?? 0) === 0) {
-            const intention = agent.intentionStack?.[agent.intentionStack.length - 1];
-            const goal = intention?.goal || 'fsm_idle';
-            if (agent.intentionStack) agent.intentionStack.pop(); 
-            
-            return { isDirty: true, walOp: { op: 'AGENT_ARRIVE', data: { location: agent.locationId, state: goal } }, nextState: goal };
-        }
-
-        const nextNodeId = agent.stateContext.currentPath.shift();
+        const nextNodeId = path.shift();
         
+        // Calculate Cost
         const travelTicks = worldGraph.getEdgeTravelTicks 
             ? worldGraph.getEdgeTravelTicks(agent.locationId, nextNodeId)
             : worldGraph.getTravelCost(agent.locationId, nextNodeId) / 1.5; 
 
+        // Set Transit State
         agent.transitFrom = agent.locationId;
         agent.transitTo = nextNodeId;
         agent.travelTimer = travelTicks;
+        agent.stateContext.isTraveling = true;
+        agent.stateContext.travelCostPaid = false;
 
-        // Transition to travel state
-        return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_in_transit' } }, nextState: 'fsm_in_transit' };
-    }
+        return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_in_transit' } } };
+    },
 
-    // [REF] Added agent param
-    _handleInTransit(agent, hour, localEnv, worldState) {
-        super.tick(agent, hour, localEnv, worldState);
+    HandleTransitTick: (agent, { hour, worldState }) => {
         let walOp = null;
 
-        // --- 1. Payment & Mode Logic ---
+        // 1. Pay Logic (Run once per hop)
         if (!agent.stateContext.travelCostPaid) {
-            const travelCost = worldGraph.getEdgeTravelCost 
-                ? worldGraph.getEdgeTravelCost(agent.transitFrom, agent.transitTo) 
-                : worldGraph.getTravelCost(agent.transitFrom, agent.transitTo);
-
-            if (travelCost <= 1) { 
+            const cost = worldGraph.getTravelCost(agent.transitFrom, agent.transitTo);
+            
+            if (cost <= 1) {
                 agent.stateContext.transportMode = 'walking';
             } else {
-                agent.stateContext.transportMode = 'transit'; 
-                
-                if ((agent.money ?? 0) >= travelCost) {
-                    agent.money = (agent.money ?? 0) - travelCost;
-                    walOp = {
-                        op: 'AGENT_TRAVEL',
-                        data: { cost: travelCost, from: agent.transitFrom, to: agent.transitTo }
-                    };
+                if ((agent.money ?? 0) >= cost) {
+                    agent.money -= cost;
+                    agent.stateContext.transportMode = 'transit';
+                    walOp = { op: 'AGENT_TRAVEL', data: { cost, from: agent.transitFrom, to: agent.transitTo } };
                 } else {
-                    agent.stateContext.isSneaking = true;
-                    this.log(`[${agent.name}] Sneaking on transit...`);
+                    agent.stateContext.transportMode = 'transit_sneaking';
                     agent.stress = Math.min(100, (agent.stress ?? 0) + 15);
                     walOp = { op: 'AGENT_TRAVEL', data: { cost: 0, from: agent.transitFrom, to: agent.transitTo, sneaking: true } };
                 }
@@ -154,87 +83,122 @@ export class CommutingState extends BaseState {
             agent.stateContext.travelCostPaid = true;
         }
 
-        // --- 2. Physical Exertion ---
+        // 2. Exertion Logic
         if (agent.stateContext.transportMode === 'walking') {
-            agent.energy = Math.max(0, (agent.energy ?? 0) - 0.2); 
-            
-            const weather = worldState.weather?.weather || 'Clear';
-            if (weather.includes('Rain') || weather.includes('Snow')) {
-                 agent.mood = Math.max(0, (agent.mood ?? 0) - 0.8); 
-                 agent.energy -= 0.1; 
-            }
+            agent.energy = Math.max(0, (agent.energy ?? 0) - 0.2);
+            // Weather check could go here
         } else {
             agent.energy = Math.max(0, (agent.energy ?? 0) - 0.05);
-            
-            const isRushHour = (hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19);
-            if (isRushHour) agent.stress = Math.min(100, (agent.stress ?? 0) + 0.5);
         }
 
-        // --- 3. Flavor Events ---
-        if (Math.random() < 0.005) {
-            this._triggerTravelEvent(agent, worldState, agent.stateContext.transportMode);
-        }
-
-        // --- 4. Movement Logic ---
+        // 3. Time Logic
         agent.travelTimer = (agent.travelTimer ?? 0) - 1;
 
-        if (agent.travelTimer <= 0) {
-            const destinationNode = worldGraph.nodes[agent.transitTo];
-            const originalGoal = agent.intentionStack?.[agent.intentionStack.length - 1]?.goal || 'fsm_idle';
-
-            if (!destinationNode) {
-                this.log(`[${agent.name}] Arrived at invalid destination: ${agent.transitTo}.`);
-                agent.locationId = agent.homeLocationId;
-                return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-            }
-            
-            // CRITICAL FIX: Update locationId on arrival
-            agent.locationId = agent.transitTo; 
-
-            // Validation Check: If we arrived but aren't at the final destination for the goal, continue commuting
-            const pathLengthRemaining = agent.stateContext.currentPath?.length ?? 0;
-            if (pathLengthRemaining > 0) {
-                agent.transitFrom = null;
-                agent.transitTo = null;
-                agent.stateContext.travelCostPaid = false;
-                
-                // Continue moving to the next hop
-                return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_commuting' } }, nextState: 'fsm_commuting' };
-            }
-            
-            // Final Arrival: Complete the intention and transition to the goal state
-            if (agent.intentionStack) agent.intentionStack.pop(); 
-            
-            return { isDirty: true, walOp: { op: 'AGENT_ARRIVE', data: { location: agent.transitTo, state: originalGoal } }, nextState: originalGoal };
+        // 4. Flavor Event
+        if (Math.random() < 0.005) {
+            const evt = agent.stateContext.transportMode === 'walking' ? "stepped in a puddle" : "saw a rat";
+            agent.mood -= 2;
         }
 
         return { isDirty: true, walOp };
+    },
+
+    CompleteHop: (agent) => {
+        // Arrived at intermediate node
+        agent.locationId = agent.transitTo;
+        agent.transitFrom = null;
+        agent.transitTo = null;
+        agent.stateContext.isTraveling = false;
+        
+        // If final destination, Arrival logic will handle it next tick
+        return Status.SUCCESS;
+    },
+
+    // --- ARRIVAL ---
+    ProcessArrival: (agent) => {
+        // We are at the target
+        const originalGoal = agent.intentionStack?.[agent.intentionStack.length - 1]?.goal || 'fsm_idle';
+        if (agent.intentionStack) agent.intentionStack.pop();
+
+        return { 
+            isDirty: true, 
+            walOp: { op: 'AGENT_ARRIVE', data: { location: agent.locationId, state: originalGoal } }, 
+            nextState: originalGoal 
+        };
+    }
+};
+
+const Conditions = {
+    IsAtDestination: (agent) => (agent.locationId === agent.targetLocationId),
+    HasPath: (agent) => (agent.stateContext.currentPath && agent.stateContext.currentPath.length > 0),
+    IsTraveling: (agent) => (agent.stateContext.isTraveling && agent.travelTimer > 0),
+    IsHopComplete: (agent) => (agent.stateContext.isTraveling && agent.travelTimer <= 0)
+};
+
+// === 2. BEHAVIOR TREE ===
+
+const CommutingTree = new Selector([
+    // 1. Are we there yet? (Final Arrival)
+    new Sequence([
+        new Condition(Conditions.IsAtDestination),
+        new Action(Actions.ProcessArrival)
+    ]),
+
+    // 2. Are we currently moving between nodes? (In Transit)
+    new Selector([
+        // A. Transit Finished -> Update Location
+        new Sequence([
+            new Condition(Conditions.IsHopComplete),
+            new Action(Actions.CompleteHop)
+        ]),
+        // B. Still Moving -> Tick
+        new Sequence([
+            new Condition(Conditions.IsTraveling),
+            new Action(Actions.HandleTransitTick)
+        ])
+    ]),
+
+    // 3. Do we need a path? (Planning)
+    new Sequence([
+        // If we aren't traveling and don't have a path...
+        // Note: Using Inverter checks effectively
+        new Action(Actions.FindPath) // This action returns SUCCESS if path found, FAILURE/Action if error
+    ]),
+
+    // 4. Ready to start next leg? (Execution)
+    new Sequence([
+        new Condition(Conditions.HasPath),
+        new Action(Actions.SetupNextHop)
+    ])
+]);
+
+// === 3. STATE CLASS ===
+
+export class CommutingState extends BaseState {
+    enter(agent) {
+        super.enter(agent);
+        this._updateActivityFromState(agent);
+        
+        // Initialize State Context
+        // Note: We don't clear path if it exists, to allow resuming? 
+        // Safer to clear to ensure recalculation against current graph.
+        if (!agent.stateContext.isTraveling) {
+            agent.stateContext.currentPath = null;
+            agent.stateContext.isTraveling = false;
+        }
     }
 
-    // [REF] Added agent param
-    _triggerTravelEvent(agent, worldState, mode) {
-        let events = [];
-        if (mode === 'walking') {
-            events = [
-                { text: "stepped in a puddle", mood: -5 },
-                { text: "found a dollar on the sidewalk", mood: 5, money: 1 },
-                { text: "saw a cute dog", mood: 5 },
-                { text: "got splashed by a car", mood: -15, stress: 10 }
-            ];
-        } else {
-             events = [
-                { text: "saw a breakdancer spinning on cardboard", mood: 5 },
-                { text: "heard a heated argument about pizza toppings", stress: 2 },
-                { text: "saw a rat dragging a whole slice of pizza", mood: 2 },
-                { text: "smelled something weird", mood: -2 }
-            ];
-        }
+    tick(agent, hour, localEnv, worldState) {
+        // Note: We handle base tick manually inside Transit logic if needed, 
+        // or call super() but with overrides.
+        // For commuting, we usually skip standard boredom/social decay.
+        super.tick(agent, hour, localEnv, worldState, { skipBoredom: true });
 
-        const evt = events[Math.floor(Math.random() * events.length)];
-        eventBus.emitNow('db:writeMemory', 'low', agent.id, worldState.currentTick, `Commuting (${mode}): ${evt.text}`);
+        const context = { hour, localEnv, worldState, transition: null };
+        const status = CommutingTree.execute(agent, context);
+
+        if (context.transition) return context.transition;
         
-        if (evt.mood) agent.mood = Math.max(0, Math.min(100, (agent.mood ?? 0) + evt.mood));
-        if (evt.stress) agent.stress = Math.max(0, Math.min(100, (agent.stress ?? 0) + evt.stress));
-        if (evt.money) agent.money = (agent.money ?? 0) + evt.money;
+        return { isDirty: context.isDirty || false, walOp: context.walOp };
     }
 }

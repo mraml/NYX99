@@ -1,71 +1,35 @@
 import { BaseState } from './BaseState.js';
+import { Selector, Sequence, Condition, Action, Inverter, Status } from '../BehaviorTreeCore.js';
 import { GAME_BALANCE } from '../../data/balance.js';
 import worldGraph from '../../data/worldGraph.js';
 
-export class AcquireHousingState extends BaseState {
-    
-    // [REF] Added agent param
-    enter(agent) {
-        super.enter(agent);
-        // [REF] Use stateContext instead of this.displayName if it needs to be dynamic
-        // But since this is specific to this state, we can assume updateActivity uses a constant.
-        // However, updateActivityFromState reads this.displayName. 
-        // We need to set it on the instance ONLY if we are okay with it being shared... 
-        // WAIT. 'displayName' on BaseState was used to override activity name.
-        // Since singletons are shared, we CANNOT set this.displayName = 'Searching...' here.
-        // We must override _updateActivityFromState or set it on context.
-        
-        // Solution: Set it on the context, and update BaseState to read from context?
-        // OR: Just set agent.currentActivity directly here.
-        agent.currentActivity = 'Searching for New Home';
-    }
+// === 1. LEAF NODES ===
 
-    // [REF] Added agent param
-    tick(agent, hour, localEnv, worldState) {
-        // [REF] Passed agent
-        super.tick(agent, hour, localEnv, worldState, { decay: true, regen: false, stress: false });
+const Actions = {
+    GiveUpHousing: (agent, { worldState }) => {
+        agent.lastHousingFailureTick = worldState.currentTick;
+        if (agent.lod === 1) console.log(`[${agent.name}] Cannot afford housing. Giving up.`);
         
-        // --- 1. SAFETY / UTILITY CHECK ---
+        // Decide next step based on desperation
+        const next = (agent.money < 100) ? 'fsm_working' : 'fsm_idle';
+        return { isDirty: true, nextState: next };
+    },
+
+    TravelToHouse: (agent) => {
+        if (agent.lod === 1) console.log(`[${agent.name}] Traveling to potential home.`);
+        return { isDirty: true, nextState: 'fsm_commuting' };
+    },
+
+    SignLease: (agent, { worldState }) => {
         const cost = GAME_BALANCE.COSTS?.HOUSING_DOWNPAYMENT || 1000;
-        
-        // --- 1a. SMARTER COOLDOWN CHECK ---
-        const lastFail = agent.lastHousingFailureTick || 0;
-        const ticksSinceFailure = worldState.currentTick - lastFail;
-        
-        if (ticksSinceFailure < 24 && (agent.money ?? 0) < cost) {
-             this.log(`[${agent.name}] Recently failed and still cannot afford housing. Waiting.`);
-             return { isDirty: true, nextState: 'fsm_idle' };
-        }
-        
-        // --- 2. CANNOT AFFORD CHECK (Final decision) ---
-        if ((agent.money ?? 0) < cost) {
-            this.log(`[${agent.name}] Cannot afford housing ($${agent.money}/${cost}). Giving up for now.`);
-            
-            agent.lastHousingFailureTick = worldState.currentTick;
-            
-            const next = (agent.money < 100) ? 'fsm_working' : 'fsm_idle';
-            
-            return { isDirty: true, nextState: next };
-        }
-
-        // --- 3. TRAVEL CHECK ---
-        const currentLoc = agent.locationId || agent.homeLocationId;
-        if (currentLoc !== agent.targetLocationId) {
-            this.log(`[${agent.name}] Need to travel to housing location first.`);
-            // Transition to the standard travel state
-            return { isDirty: true, nextState: 'fsm_commuting' };
-        }
-
-        // --- 4. EXECUTION ---
         const newHomeNode = worldGraph.nodes[agent.targetLocationId];
+        
         if (newHomeNode && newHomeNode.type === 'home') {
             agent.money -= cost;
             agent.homeLocationId = newHomeNode.key;
-            agent.homeNode = newHomeNode;
+            agent.homeNode = newHomeNode; // Note: This might not serialize well, ID is better
             agent.rent_cost = newHomeNode.rent_cost;
-            agent.lastHousingFailureTick = 0; 
-            
-            this.log(`[${agent.name}] Acquired home at ${newHomeNode.name}!`, 'high', true, worldState.currentTick);
+            agent.lastHousingFailureTick = 0;
             
             return { 
                 isDirty: true, 
@@ -73,7 +37,74 @@ export class AcquireHousingState extends BaseState {
                 nextState: 'fsm_idle'
             };
         }
-
+        return { isDirty: true, nextState: 'fsm_idle' }; // Failed logic
+    },
+    
+    WaitCooldown: (agent) => {
+        // Just idle/wait if we recently failed but are still here
         return { isDirty: true, nextState: 'fsm_idle' };
+    }
+};
+
+const Conditions = {
+    CanAfford: (agent) => {
+        const cost = GAME_BALANCE.COSTS?.HOUSING_DOWNPAYMENT || 1000;
+        return (agent.money ?? 0) >= cost;
+    },
+    
+    IsCoolingDown: (agent, { worldState }) => {
+        const lastFail = agent.lastHousingFailureTick || 0;
+        return (worldState.currentTick - lastFail) < 24;
+    },
+
+    IsAtTarget: (agent) => {
+        const currentLoc = agent.locationId || agent.homeLocationId;
+        return currentLoc === agent.targetLocationId;
+    }
+};
+
+// === 2. BEHAVIOR TREE ===
+
+const HousingTree = new Selector([
+    // 1. Cooldown Check (Don't spam searches if broke)
+    new Sequence([
+        new Condition(Conditions.IsCoolingDown),
+        new Inverter(new Condition(Conditions.CanAfford)), // If broke AND cooling down
+        new Action(Actions.WaitCooldown)
+    ]),
+
+    // 2. Affordability Check (Hard Gate)
+    new Sequence([
+        new Inverter(new Condition(Conditions.CanAfford)),
+        new Action(Actions.GiveUpHousing)
+    ]),
+
+    // 3. Travel Check
+    new Sequence([
+        new Inverter(new Condition(Conditions.IsAtTarget)),
+        new Action(Actions.TravelToHouse)
+    ]),
+
+    // 4. Execution
+    new Action(Actions.SignLease)
+]);
+
+// === 3. STATE CLASS ===
+
+export class AcquireHousingState extends BaseState {
+    enter(agent) {
+        super.enter(agent);
+        agent.currentActivity = 'Searching for New Home';
+    }
+
+    tick(agent, hour, localEnv, worldState) {
+        super.tick(agent, hour, localEnv, worldState, { decay: true });
+
+        const context = { hour, localEnv, worldState, transition: null };
+        const status = HousingTree.execute(agent, context);
+
+        if (context.transition) return context.transition;
+
+        return { isDirty: true, walOp: context.walOp };
     }
 }

@@ -1,66 +1,108 @@
 import { BaseState } from './BaseState.js';
+import { Selector, Sequence, Condition, Action, Status } from '../BehaviorTreeCore.js';
 import { GAME_BALANCE } from '../../data/balance.js';
 import worldGraph from '../../data/worldGraph.js';
 
-/**
- * DesperateState.js
- * Fallback state for agents with critical needs and no resources.
- * [REF] Stateless Flyweight Version
- */
-export class DesperateState extends BaseState {
-    
-    // [REF] Added agent param
-    enter(agent) {
-        super.enter(agent);
-        this._updateActivityFromState(agent);
-        this.log(`[${agent.name}] Is desperate! No money, no food.`);
-        
-        // [REF] Move stateful properties to agent.stateContext
+// === 1. LEAF NODES ===
+
+const Actions = {
+    InitDesperation: (agent) => {
+        if (agent.stateContext.ticksInState !== undefined) return Status.SUCCESS;
         agent.stateContext.ticksInState = 0;
-        agent.stateContext.maxDesperationTicks = 120; // Hard cap (2 hours)
-    }
+        agent.stateContext.maxDesperationTicks = 120; // Hard cap
+        if (agent.lod === 1) console.log(`[${agent.name}] Is desperate! No money, no food.`);
+        return Status.SUCCESS;
+    },
 
-    // [REF] Added agent param
-    tick(agent, hour, localEnv, worldState) {
-        super.tick(agent, hour, localEnv, worldState);
-        agent.stateContext.ticksInState++;
+    RestFromExhaustion: (agent) => {
+        if (agent.lod === 1) console.log(`[${agent.name}] Too exhausted to scrounge. Giving up.`);
+        return { isDirty: true, nextState: 'fsm_idle' };
+    },
 
-        let isDirty = true;
-        let walOp = null;
-
-        // Hard Loop Break
-        if (agent.stateContext.ticksInState >= agent.stateContext.maxDesperationTicks) {
-             this.log(`[${agent.name}] Too exhausted to scrounge. Resting.`);
-             return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-        }
-
-        // 1. BEGGING / SCAVENGING LOGIC
-        if (Math.random() < 0.1) {
-            const foundMoney = Math.floor(Math.random() * 5) + 1;
-            agent.money = (agent.money ?? 0) + foundMoney;
-            this.log(`[${agent.name}] Scrounged up $${foundMoney}.`);
-            walOp = { op: 'AGENT_FOUND_MONEY', data: { amount: foundMoney } };
-        }
-
-        // 2. RECOVERY CONDITION
+    CheckForRecovery: (agent) => {
         const foodCost = GAME_BALANCE.COSTS?.GROCERIES || 20; 
         if ((agent.money ?? 0) >= foodCost) {
-            this.log(`[${agent.name}] Scraped together enough cash ($${agent.money}). Heading to store.`);
-            return { isDirty: true, walOp, nextState: 'fsm_shopping' };
+            if (agent.lod === 1) console.log(`[${agent.name}] Scraped together enough cash. Heading to store.`);
+            return { isDirty: true, nextState: 'fsm_shopping' };
         }
+        return Status.FAILURE;
+    },
 
-        // 3. MOVEMENT (Wander to find better spots)
-        if (agent.stateContext.ticksInState % 20 === 0) {
-            const target = worldGraph.findRandomLocationByType('park') || worldGraph.findRandomLocationByType('subway_station');
-            if (target && target.key !== agent.locationId) {
-                agent.targetLocationId = target.key;
-                return { isDirty: true, walOp, nextState: 'fsm_commuting' };
-            }
+    Relocate: (agent, { worldState }) => {
+        // Move every 20 ticks if unsuccessful
+        if (agent.stateContext.ticksInState % 20 !== 0) return Status.FAILURE;
+
+        const target = worldGraph.findRandomLocationByType('park') || worldGraph.findRandomLocationByType('subway_station');
+        
+        if (target && target.key !== agent.locationId) {
+            agent.targetLocationId = target.key;
+            return { isDirty: true, nextState: 'fsm_commuting' };
         }
+        return Status.FAILURE;
+    },
 
+    Scavenge: (agent) => {
+        agent.stateContext.ticksInState++;
         agent.stress = Math.min(100, (agent.stress ?? 0) + 0.5);
         agent.mood = Math.max(-100, (agent.mood ?? 0) - 0.5);
 
-        return { isDirty, walOp };
+        // 10% Chance to find money
+        if (Math.random() < 0.1) {
+            const foundMoney = Math.floor(Math.random() * 5) + 1;
+            agent.money = (agent.money ?? 0) + foundMoney;
+            return { isDirty: true, walOp: { op: 'AGENT_FOUND_MONEY', data: { amount: foundMoney } } };
+        }
+        
+        return Status.RUNNING;
+    }
+};
+
+const Conditions = {
+    IsExhausted: (agent) => {
+        return (agent.stateContext.ticksInState >= agent.stateContext.maxDesperationTicks);
+    }
+};
+
+// === 2. BEHAVIOR TREE ===
+
+const DesperateTree = new Sequence([
+    new Action(Actions.InitDesperation),
+
+    new Selector([
+        // 1. Give up if too tired
+        new Sequence([
+            new Condition(Conditions.IsExhausted),
+            new Action(Actions.RestFromExhaustion)
+        ]),
+
+        // 2. Success? (Have we found enough money?)
+        new Action(Actions.CheckForRecovery),
+
+        // 3. Need to move?
+        new Action(Actions.Relocate),
+
+        // 4. Scrounge
+        new Action(Actions.Scavenge)
+    ])
+]);
+
+// === 3. STATE CLASS ===
+
+export class DesperateState extends BaseState {
+    enter(agent) {
+        super.enter(agent);
+        this._updateActivityFromState(agent);
+        agent.stateContext.ticksInState = undefined; // Trigger Init
+    }
+
+    tick(agent, hour, localEnv, worldState) {
+        super.tick(agent, hour, localEnv, worldState);
+
+        const context = { hour, localEnv, worldState, transition: null };
+        const status = DesperateTree.execute(agent, context);
+
+        if (context.transition) return context.transition;
+
+        return { isDirty: (worldState.currentTick % 10 === 0), walOp: context.walOp };
     }
 }

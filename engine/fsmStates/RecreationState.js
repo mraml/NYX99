@@ -1,120 +1,123 @@
 import { BaseState } from './BaseState.js';
-import { STRESS_REDUCTION_PER_TICK_FIXED } from '../fsm.js';
+import { Selector, Sequence, Condition, Action, Status } from '../BehaviorTreeCore.js';
 import { ACTIVITIES_MAP } from '../../data/dataLoader.js';
 import { GAME_BALANCE } from '../../data/balance.js';
 import { isAgentWorkShift } from '../agentUtilities.js';
 import eventBus from '../eventBus.js';
 
-export class RecreationState extends BaseState {
-    
-    // [REF] Removed constructor(fsm, goal)
+// === 1. LEAF NODES ===
 
-    // [REF] Added agent param
-    enter(agent, params = {}) {
-        super.enter(agent);
-        this._updateActivityFromState(agent);
-        this.log(`[${agent.name}] Starting recreation: ${agent.currentActivityName}.`);
+const Actions = {
+    InitRecreation: (agent, context) => {
+        if (agent.stateContext.ticksInState !== undefined) return Status.SUCCESS;
         
-        // [REF] Move stateful properties to agent.stateContext
-        // We look at the params passed to transitionTo/enter, OR the intention stack context
-        // The FSM passes params to enter() now.
-        agent.stateContext.duration = params.context?.duration || null;
-        agent.stateContext.ticksInState = 0; 
-    }
+        // Params passed from FSM transition or Intent
+        agent.stateContext.duration = agent.stateContext.duration || 60; // Default 1 hour
+        agent.stateContext.ticksInState = 0;
+        
+        if (agent.lod === 1) console.log(`[${agent.name}] Starting fun: ${agent.currentActivityName}`);
+        return Status.SUCCESS;
+    },
 
-    // [REF] Added agent param
-    tick(agent, hour, localEnv, worldState) {
-        // 1. Curfew Check (Hard Stop)
-        if (hour >= 2 && hour < 5) {
-            this.log(`[${agent.name}] It's way too late (Curfew). Stopping recreation.`);
-            this._exitRecreation(agent, 'It got too late.');
-            return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-        }
-
-        // 2. Work Shift Check
-        if (isAgentWorkShift(agent, hour)) {
-             this.log(`[${agent.name}] Work shift started. Stopping recreation.`);
-             this._exitRecreation(agent, 'Work shift started.');
-             return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-        }
-
+    PerformActivity: (agent, { localEnv, worldState }) => {
         agent.stateContext.ticksInState++;
-        if (agent.stateContext.duration !== null && agent.stateContext.ticksInState >= agent.stateContext.duration) {
-            this._exitRecreation(agent, 'Planned duration ended.');
-            return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-        }
-
-        super.tick(agent, hour, localEnv, worldState, { skipStressCalculation: true });
 
         const currentActDef = ACTIVITIES_MAP[agent.currentActivityName] || {};
         const tags = currentActDef.interest_tags || [];
         const isActive = tags.includes('active') || tags.includes('creative');
-        
-        let stressReduction = STRESS_REDUCTION_PER_TICK_FIXED; 
+
+        // Logic ported from old state
+        let stressReduction = 0.5;
         let boredomReduction = 10;
         let energyCost = 0;
 
-        const openness = agent.persona?.openness ?? 0.5;
-        const extroversion = agent.persona?.extroversion ?? 0.5;
-
         if (isActive) {
-            stressReduction *= 2.5; 
-            boredomReduction = 15 * (openness > 0.6 ? 0.8 : 1.0); 
-            energyCost = 2.0;       
-        } else {
-            stressReduction *= 1.0; 
-            boredomReduction = 8 * (openness > 0.7 ? 1.5 : 1.0);
-            energyCost = 0; 
+            stressReduction *= 2.5;
+            energyCost = 2.0;
         }
 
-        const crowdCount = agent.perceivedAgents?.length || 0;
-        if (extroversion < 0.4 && (localEnv.noise ?? 0) < 0.3) {
-            stressReduction += 1.0; 
-        } else if (extroversion > 0.6 && crowdCount > 2) {
-            stressReduction += 0.5;
-            agent.social = Math.min(100, (agent.social ?? 0) + 0.2); 
-        }
-
-        if ((localEnv.condition ?? 100) < 40) {
-            stressReduction *= 0.5;
-        }
-
-        agent.boredom = Math.max(0, (agent.boredom ?? 0) - boredomReduction); 
+        // Apply
+        agent.boredom = Math.max(0, (agent.boredom ?? 0) - boredomReduction);
         agent.stress = Math.max(0, (agent.stress ?? 0) - stressReduction);
-        agent.energy = Math.max(0, Math.min(100, (agent.energy ?? 100) - energyCost)); 
+        agent.energy = Math.max(0, (agent.energy ?? 0) - energyCost);
         agent.mood = Math.min(100, (agent.mood ?? 0) + GAME_BALANCE.REGEN.MOOD_BOOST_RECREATION);
 
-        // Flavor Events
+        // Flavor
         if (Math.random() < 0.01) {
-            const events = [
-                "lost track of time completely",
-                "felt a wave of calm",
-                "had a great idea",
-                "really enjoyed the atmosphere",
-                "felt like myself again"
-            ];
-            const evt = events[Math.floor(Math.random() * events.length)];
-            eventBus.emitNow('db:writeMemory', 'low', agent.id, worldState.currentTick, `While relaxing, I ${evt}.`);
-            agent.mood = Math.min(100, (agent.mood ?? 0) + 5);
+            eventBus.emitNow('db:writeMemory', 'low', agent.id, worldState.currentTick, `Having a great time ${agent.currentActivityName}.`);
         }
 
-        // Natural Exit Conditions
-        if ((agent.boredom ?? 0) <= 5 && (agent.stress ?? 0) <= 10) {
-            this.log(`[${agent.name}] Feeling refreshed. Stopping recreation.`);
-            this._exitRecreation(agent, 'Fully refreshed.');
-            return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-        } else if (isActive && (agent.energy ?? 100) < 10) {
-            this.log(`[${agent.name}] Too tired to continue ${agent.currentActivityName}.`);
-            this._exitRecreation(agent, 'Too tired.');
-            return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_idle' } }, nextState: 'fsm_idle' };
-        }
+        return Status.SUCCESS;
+    },
+
+    StopRecreation: (agent, { reason }) => {
+        if (agent.lod === 1) console.log(`[${agent.name}] Stopping recreation: ${reason}`);
+        if (agent.intentionStack) agent.intentionStack.pop();
+        return { isDirty: true, nextState: 'fsm_idle' };
+    }
+};
+
+const Conditions = {
+    IsCurfew: (agent, { hour }) => (hour >= 2 && hour < 5),
+    IsWorkStarting: (agent, { hour }) => isAgentWorkShift(agent, hour),
+    
+    IsFinished: (agent) => {
+        const duration = agent.stateContext.duration;
+        if (duration && agent.stateContext.ticksInState >= duration) return true;
         
-        return { isDirty: (worldState.currentTick % 10 === 0), walOp: null };
+        // Natural saturation
+        if ((agent.boredom ?? 0) <= 5 && (agent.stress ?? 0) <= 10) return true;
+        
+        // Exhaustion check
+        if ((agent.energy ?? 0) < 10) return true;
+        
+        return false;
+    }
+};
+
+// === 2. BEHAVIOR TREE ===
+
+const RecreationTree = new Sequence([
+    new Action(Actions.InitRecreation),
+
+    new Selector([
+        // 1. MUST STOP Reasons
+        new Sequence([
+            new Condition(Conditions.IsCurfew),
+            new Action((a) => Actions.StopRecreation(a, { reason: "Curfew" }))
+        ]),
+        new Sequence([
+            new Condition(Conditions.IsWorkStarting),
+            new Action((a) => Actions.StopRecreation(a, { reason: "Work Starting" }))
+        ]),
+        new Sequence([
+            new Condition(Conditions.IsFinished),
+            new Action((a) => Actions.StopRecreation(a, { reason: "Finished/Bored" }))
+        ]),
+
+        // 2. DO ACTIVITY
+        new Action(Actions.PerformActivity)
+    ])
+]);
+
+// === 3. STATE CLASS ===
+
+export class RecreationState extends BaseState {
+    enter(agent, params = {}) {
+        super.enter(agent);
+        this._updateActivityFromState(agent);
+        // Note: We use params.context if passed from FSM, otherwise rely on Tree init
+        if (params.context?.duration) agent.stateContext.duration = params.context.duration;
     }
 
-    // [REF] Added agent param
-    _exitRecreation(agent, reason) {
-        if (agent.intentionStack) agent.intentionStack.pop();
-        // Return handled by caller, or caller uses nextState
+    tick(agent, hour, localEnv, worldState) {
+        super.tick(agent, hour, localEnv, worldState, { skipStressCalculation: true });
+
+        const context = { hour, localEnv, worldState, transition: null };
+        const status = RecreationTree.execute(agent, context);
+
+        if (context.transition) return context.transition;
+        
+        return { isDirty: (worldState.currentTick % 10 === 0), walOp: null };
     }
 }

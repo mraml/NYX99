@@ -1,116 +1,123 @@
 import { BaseState } from './BaseState.js';
+import { Selector, Sequence, Condition, Action, Status } from '../BehaviorTreeCore.js';
 import eventBus from '../eventBus.js';
 
-/**
- * IdleState.js
- * Represents an agent doing nothing/waiting.
- * [REF] Stateless Flyweight Version
- * (MODIFIED: Removed hardcoded thought/activity strings.)
- */
-export class IdleState extends BaseState {
-    
-    // [REF] Removed constructor(fsm)
+// === 1. LEAF NODES ===
 
-    // [REF] Added agent param
-    enter(agent) {
-        super.enter(agent);
-        this._updateActivityFromState(agent); // [REF] Passed agent
-        // Only log if significant or LOD 1 to reduce spam
-        if (agent.lod === 1) {
-             this.log(`[${agent.name}] Is idle.`);
-        }
-    }
+const Actions = {
+    SeekHousing: (agent) => {
+        if (agent.lod === 1) console.log(`[${agent.name}] Idle and homeless. Looking for home.`);
+        return { isDirty: true, nextState: 'fsm_acquire_housing' };
+    },
 
-    // [REF] Added agent param as first arg
-    tick(agent, hour, localEnv, worldState) {
-        // Apply passive decay from BaseState
-        // [REF] Pass agent to super
-        super.tick(agent, hour, localEnv, worldState);
+    SeekFood: (agent) => {
+        return { isDirty: true, nextState: 'fsm_eating' };
+    },
 
-        // [REF] agent is now an argument, no longer this.agent
-        
-        // === PERFORMANCE FIX ===
-        // Idling is low-priority. Only update UI every 10 ticks.
-        let isDirty = (worldState.currentTick % 10 === 0);
+    SeekSleep: (agent) => {
+        return { isDirty: true, nextState: 'fsm_sleeping' };
+    },
 
-        // --- 1. Boredom & Personality (The "Waiting" Factor) ---
-        // Idling accelerates boredom decay, heavily influenced by personality.
+    DoIdleBehavior: (agent, { localEnv, worldState }) => {
+        // --- 1. Boredom Calculation ---
         const patience = agent.persona?.conscientiousness ?? 0.5;
         const energy = agent.energy ?? 50;
         
-        let boredomPenalty = 2.0; 
-        
-        // High Energy or Low Patience -> Bored/Stressed faster
-        if (patience < 0.3 || energy > 80) {
-            boredomPenalty *= 2.0;
-            // Fidgeting: High energy idling causes slight stress
-            if (energy > 80) {
-                agent.stress = Math.min(100, (agent.stress ?? 0) + 0.05);
-            }
-        } else if (patience > 0.7) {
-            // Patient/Chill people don't mind waiting
-            boredomPenalty *= 0.5; 
-            // Meditative: Patient idling reduces stress slightly
-            agent.stress = Math.max(0, (agent.stress ?? 0) - 0.1);
-        }
-        
+        // Impatient or High Energy -> Bored faster
+        let boredomPenalty = (patience < 0.3 || energy > 80) ? 4.0 : 2.0;
+        if (patience > 0.7) boredomPenalty = 1.0; // Patient
+
         agent.boredom = Math.max(0, (agent.boredom ?? 0) - boredomPenalty);
 
-        // --- 2. People Watching (Environment Factor) ---
+        // --- 2. People Watching ---
         const crowdCount = agent.perceivedAgents?.length || 0;
-        
         if (crowdCount > 0) {
-            // Watching people is mildly entertaining
             agent.boredom = Math.min(100, (agent.boredom ?? 0) + 0.5);
-            
-            // Extroverts gain social battery just by being near others
-            if ((agent.persona?.extroversion ?? 0.5) > 0.6) {
+             if ((agent.persona?.extroversion ?? 0.5) > 0.6) {
                  agent.social = Math.min(100, (agent.social ?? 0) + 0.1);
             }
         }
 
-        // --- 3. Daydreaming (Flavor Events) ---
-        // 2% chance per tick to have a thought
-        if (Math.random() < 0.02) { 
-            // Removed hardcoded thoughts array
-            
-            // Only update UI/Log for significant agents
-            if (agent.lod === 1) {
-                // Log generic event marker instead of specific thought
-                this.log(`[${agent.name}] Is deeply focused on something internal.`); 
-                isDirty = true; 
-            }
-            
-            // Rare chance to form a memory from idling
-            if (Math.random() < 0.1) {
-                 // Removed hardcoded memory string
-                 eventBus.emitNow('db:writeMemory', 'low', agent.id, worldState.currentTick, `Had an internal thought or observation.`);
-            }
+        // --- 3. Flavor (Daydreaming) ---
+        if (Math.random() < 0.02) {
+             if (agent.lod === 1) console.log(`[${agent.name}] Is daydreaming.`);
+             
+             if (Math.random() < 0.1) {
+                 eventBus.emitNow('db:writeMemory', 'low', agent.id, worldState.currentTick, `Had an internal thought.`);
+             }
+             return { isDirty: true };
         }
 
-        // --- 4. Intention Check & Need Fulfillment ---
-        // NEW: If we have no plan and we're idle, check for immediate critical needs
-        if (!agent.intentionStack || agent.intentionStack.length === 0) {
-            
-            // Critical Need 1: Housing (Always highest priority if homeless)
-            if (!agent.homeLocationId) {
-                this.log(`[${agent.name}] Homeless and idle. Searching for housing.`);
-                return { isDirty: true, nextState: 'fsm_acquire_housing' }; 
-            }
-            
-            // Critical Need 2: Food
-            if ((agent.hunger ?? 0) > 80) {
-                this.log(`[${agent.name}] Idle but hungry. Seeking food.`);
-                return { isDirty: true, nextState: 'fsm_eating' }; 
-            }
-            
-            // Critical Need 3: Sleep
-            if ((agent.energy ?? 0) < 20) {
-                this.log(`[${agent.name}] Idle but exhausted. Seeking sleep.`);
-                return { isDirty: true, nextState: 'fsm_sleeping' }; 
-            }
-        }
+        return Status.SUCCESS;
+    }
+};
 
-        return { isDirty, walOp: null };
+const Conditions = {
+    // Check if we have an explicit intention (from player or event)
+    HasIntention: (agent) => {
+        return (agent.intentionStack && agent.intentionStack.length > 0);
+    },
+
+    IsHomeless: (agent) => !agent.homeLocationId,
+    
+    // Updated: Critical hunger overrides schedule, otherwise prefer meal times
+    IsHungryAndMealTime: (agent, { hour }) => {
+        const hunger = agent.hunger ?? 0;
+        if (hunger > 90) return true; // Starving overrides everything
+        
+        // Meal Times: Breakfast (7-9), Lunch (12-14), Dinner (18-20)
+        const isMealTime = (hour >= 7 && hour <= 9) || (hour >= 12 && hour <= 14) || (hour >= 18 && hour <= 20);
+        return (hunger > 60 && isMealTime);
+    },
+    
+    // Updated: Critical fatigue overrides schedule, otherwise prefer night
+    IsTiredAndNightTime: (agent, { hour }) => {
+        const energy = agent.energy ?? 0;
+        if (energy < 10) return true; // Passing out
+        
+        // Sleep at night (22:00 - 05:00)
+        const isNight = (hour >= 22 || hour < 5);
+        return (energy < 40 && isNight);
+    }
+};
+
+// === 2. BEHAVIOR TREE ===
+
+const IdleTree = new Selector([
+    // 1. Proactive Needs (The "I should probably..." Logic)
+    new Sequence([
+        new Condition(Conditions.IsHomeless),
+        new Action(Actions.SeekHousing)
+    ]),
+    new Sequence([
+        new Condition(Conditions.IsHungryAndMealTime),
+        new Action(Actions.SeekFood)
+    ]),
+    new Sequence([
+        new Condition(Conditions.IsTiredAndNightTime),
+        new Action(Actions.SeekSleep)
+    ]),
+
+    // 2. Default Idling
+    new Action(Actions.DoIdleBehavior)
+]);
+
+// === 3. STATE CLASS ===
+
+export class IdleState extends BaseState {
+    enter(agent) {
+        super.enter(agent);
+        this._updateActivityFromState(agent);
+    }
+
+    tick(agent, hour, localEnv, worldState) {
+        super.tick(agent, hour, localEnv, worldState); // Decay
+
+        const context = { hour, localEnv, worldState, transition: null };
+        const status = IdleTree.execute(agent, context);
+
+        if (context.transition) return context.transition;
+
+        return { isDirty: (worldState.currentTick % 10 === 0), walOp: null };
     }
 }
