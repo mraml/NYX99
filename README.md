@@ -1,7 +1,5 @@
 # NYX99
 
-> A sophisticated humanity simulator built with Node.js
-
 ## 📖 Overview
 
 NYX99 is an advanced command line simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding as a long term hobby, like my own digital model train set, or terrarium, and eventually maybe a nice place for us all to live once the machines take over.
