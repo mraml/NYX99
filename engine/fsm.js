@@ -165,6 +165,7 @@ export class FiniteStateMachine {
         this.ticksInCurrentState++;
         
         let tickResult = { isDirty: false, walOp: null };
+        let transitionOccurred = false; // [FIX] Track if transition occurred this tick
 
         // --- 1. LIZARD BRAIN (Safety Overrides) ---
         if (this._handleCriticalInterruption(worldState.currentTick)) {
@@ -179,11 +180,13 @@ export class FiniteStateMachine {
             if (tickResult.nextState && tickResult.nextState !== this.agent.state) {
                 // Use the transitionTo wrapper for safety and recursion guard
                 this.transitionTo(tickResult.nextState, { reason: 'state_self_transition' }); 
+                transitionOccurred = true; // [FIX] Mark transition
             }
         }
 
         // --- 3. Process Pending State Changes ---
-        if (this.pendingStateChange) {
+        // [FIX] Skip pending state check if already transitioned in step 2 to prevent double-transition
+        if (!transitionOccurred && this.pendingStateChange) {
             this._applyPendingState();
         }
 
@@ -212,11 +215,12 @@ export class FiniteStateMachine {
         // B. STARVATION (Hunger > STARVATION_THRESHOLD)
         if ((agent.hunger ?? 0) > STARVATION_THRESHOLD && 
             state !== 'fsm_bio_eating' && 
-            state !== 'fsm_survival_desperate' && 
+            state !== 'fsm_desperate' && // [FIX] Check normalized state
+            state !== 'fsm_survival_desperate' && // [FIX] Check legacy alias
             state !== 'fsm_economy_shopping') {
             
             eventBus.emitNow('log:agent', 'high', `[${agent.name}] Starving! Entering survival mode.`);
-            this._queueStateChange('fsm_survival_desperate', { reason: 'critical_starvation' }); 
+            this._queueStateChange('fsm_desperate', { reason: 'critical_starvation' }); // [FIX] Target standardized state
             return true;
         }
         
@@ -258,9 +262,13 @@ export class FiniteStateMachine {
                 this.currentState.exit(this.agent);
                 this.previousStateName = this.currentState.name;
                 
-                // [REF] CLEANUP: Wipe the transient state context for the agent
-                // This ensures no data bleeds from the old state to the new state
-                this.agent.stateContext = {};
+                // [FIX] Context Persistence
+                // Removed blanket wipe `this.agent.stateContext = {}` which was deleting data 
+                // intended for the next state and breaking storage for states like Recreation.
+                // We now clean up only the previous state's namespace (if it exists).
+                if (this.agent.stateContext[this.previousStateName]) {
+                    delete this.agent.stateContext[this.previousStateName];
+                }
             }
             
             this.ticksInCurrentState = 0;
