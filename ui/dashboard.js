@@ -213,25 +213,46 @@ class Dashboard {
       try {
           if (!agent) return 'Unknown';
           
+          // Case 1: Digital Interaction
           if (agent.socialState && agent.socialState.isDigital && (agent.state === 'fsm_socializing' || agent.state === 'fsm_idle')) {
               const partner = agent.socialState.partnerName || 'Friend';
               return `Texting ${partner}`;
           }
 
+          // Case 2: Intent-Driven (The "Why")
           let raw = this.safeString(agent.currentActivity, '').trim();
-          
-          if (agent.state === 'fsm_in_transit') {
-              const lower = raw.toLowerCase();
-              if (!lower.includes('walk') && !lower.includes('subway') && !lower.includes('transit') && !lower.includes('travel') && !lower.includes('commute')) {
-                  return 'Commuting to destination...';
-              }
-          }
+          const activeIntention = agent.intentionStack && agent.intentionStack.length > 0 
+              ? agent.intentionStack[agent.intentionStack.length - 1] 
+              : null;
+
+          // Priority 1: High-level State override (Sleeping/Eating/Working shouldn't show "Idling")
           if (agent.state === 'fsm_sleeping') return 'Sleeping';
-          
+          if (agent.state === 'fsm_eating') return 'Eating';
+          if (agent.state.startsWith('fsm_working')) return 'Working';
+          if (agent.state === 'fsm_commuting') return 'Commuting';
+          if (agent.state === 'fsm_in_transit') {
+              // Try to find what they are doing while moving
+              const lower = raw.toLowerCase();
+              if (!lower.includes('walk') && !lower.includes('subway') && !lower.includes('transit') && !lower.includes('travel')) {
+                  return 'Traveling...';
+              }
+              return raw; // "Walking", "Taking Subway"
+          }
+
+          // Priority 2: Active Intention (e.g. "Seeking Food")
+          if (activeIntention && activeIntention.goal) {
+              const reason = activeIntention.reason ? ` (${activeIntention.reason})` : '';
+              // Format: "Goal: Find Food (Hungry)"
+              let prettyGoal = activeIntention.goal.replace('fsm_', '').replace(/_/g, ' ');
+              return `Goal: ${prettyGoal}${reason}`;
+          }
+
+          // Priority 3: Fallback to formatted state name if activity is generic "Idling"
           if ((!raw || raw === 'Idling') && agent.state && agent.state !== 'fsm_idle') {
               return agent.state.replace('fsm_', '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
           }
 
+          // Priority 4: Raw string, or just "Idle"
           return raw || 'Idle';
       } catch (e) {
           return 'Processing...';
@@ -421,8 +442,17 @@ class Dashboard {
       content += `{blue-fg}${agent.job?.title || 'Unemployed'}{/blue-fg} @ ${agent.workLocationId || 'N/A'}\n`;
       content += `Loc: ${agent.locationId || 'Unknown'}\n`;
       content += `State: {yellow-fg}${agent.state}{/yellow-fg}\n`;
-      content += `Action: ${this.getFormattedAction(agent)}\n\n`; 
+      content += `Action: ${this.getFormattedAction(agent)}\n`; 
       
+      // NEW: Show Intention
+      const intention = agent.intentionStack && agent.intentionStack.length > 0 
+          ? agent.intentionStack[agent.intentionStack.length - 1] 
+          : null;
+      if (intention) {
+          content += `Intent: {cyan-fg}${intention.goal || 'None'}{/cyan-fg} (${intention.reason || ''})\n`;
+      }
+      content += '\n';
+
       content += `{bold}Stats:{/bold}\n`;
       content += `  Money: $${Math.round(agent.money || 0)}\n`;
       content += `  Energy: ${this.progressBar(agent.energy)}\n`;
@@ -445,6 +475,18 @@ class Dashboard {
           }).join(', ');
       }
       content += `  ${statusStr}\n\n`;
+
+      // NEW: Skills
+      const skillsStr = this.getTopSkills(agent);
+      if (skillsStr) {
+          content += `{bold}Skills:{/bold} ${skillsStr}\n`;
+      }
+
+      // NEW: Inventory
+      const inventory = agent.inventory || [];
+      if (inventory.length > 0) {
+          content += `{bold}Inventory:{/bold} ${inventory.map(i => i.itemId || i.type).join(', ').substring(0, 50)}\n`;
+      }
 
       const habits = agent.habits || {};
       const sortedHabits = Object.entries(habits)
