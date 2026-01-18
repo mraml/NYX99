@@ -6,6 +6,8 @@
 
 NYX99 is an advanced command line simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding as a long term hobby, like my own digital model train set, or terrarium, and eventually maybe a nice place for us all to live once the machines take over.
 
+<img width="1642" height="893" alt="Screenshot 2026-01-17 at 11 15 19 PM" src="https://github.com/user-attachments/assets/c8d265d3-6ccd-4678-90ec-f264cc052478" />
+
 ## ✨ Features
 
 - **Agent-Based Simulation**: Model individual humans with unique characteristics and behaviors
