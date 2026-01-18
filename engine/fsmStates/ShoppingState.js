@@ -50,7 +50,13 @@ const Actions = {
 
         if (!loc) return Status.FAILURE;
 
-        // CRITICAL: Check stock first
+        // CRITICAL FIX: Check affordability explicitly before consuming stock.
+        // This prevents race conditions or logic gaps where stock is eaten but agent goes into debt.
+        if ((agent.money ?? 0) < plan.totalCost) {
+            return Status.FAILURE; // Fail transaction safely
+        }
+
+        // Check stock
         // Note: consumeStock returns true if successful. 
         // We use it here because it's atomic. If it returns true, we MUST pay.
         if (worldGraph.consumeStock(loc.key)) {
@@ -147,7 +153,7 @@ const ShoppingTree = new Sequence([
         // Option A: Successful Purchase
         new Sequence([
             new Condition(Conditions.CanAfford),
-            new Action(Actions.AttemptTransaction), // Returns FAILURE if Out of Stock
+            new Action(Actions.AttemptTransaction), // Returns FAILURE if Out of Stock OR Broke
             new Action(Actions.HandleSuccess),
             new Action(Actions.LeaveShop)
         ]),
@@ -159,7 +165,7 @@ const ShoppingTree = new Sequence([
             new Action(Actions.LeaveShop)
         ]),
 
-        // Option C: Failed (Out of Stock) -> Fallback if AttemptTransaction fails
+        // Option C: Failed (Out of Stock or Transaction Failed)
         new Sequence([
             new Action(Actions.HandleNoStock),
             new Action(Actions.LeaveShop)

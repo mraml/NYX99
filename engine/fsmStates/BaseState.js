@@ -68,6 +68,10 @@ export class BaseState {
 
         if (!overrides.skipSocial) {
              // --- Personality-Based Social Decay ---
+             // Logic Fix: Social stat represents "Social Battery" or "Connection". 
+             // High social = Good. Low social = Lonely.
+             // Therefore, decay means SUBTRACTING from agent.social.
+             
              const crowdCount = agent.perceivedAgents?.length || 0;
              const extroversion = agent.persona?.extroversion ?? 0.5;
              
@@ -80,7 +84,9 @@ export class BaseState {
                  socialDecayMult = 0.8; // Introverts are fine being alone
              }
 
-             agent.social = Math.min(100, (agent.social ?? 0) + (GAME_BALANCE.DECAY.SOCIAL * socialDecayMult));
+             // FIX: Changed from addition (+) to subtraction (-) to model decay correctly.
+             // Assuming GAME_BALANCE.DECAY.SOCIAL is a positive number (e.g. 0.2)
+             agent.social = Math.max(0, (agent.social ?? 100) - (GAME_BALANCE.DECAY.SOCIAL * socialDecayMult));
         }
 
         if (!overrides.skipBoredom) {
@@ -95,7 +101,9 @@ export class BaseState {
             // Biological Stressors
             if ((agent.energy ?? 100) < 10) stressPenalty += GAME_BALANCE.EMOTIONAL.STRESS_PENALTY_LOW_ENERGY; 
             if ((agent.hunger ?? 0) > 90) stressPenalty += GAME_BALANCE.EMOTIONAL.STRESS_PENALTY_HIGH_HUNGER; 
-            if ((agent.social ?? 0) > 90) stressPenalty += GAME_BALANCE.EMOTIONAL.STRESS_PENALTY_HIGH_SOCIAL; 
+            
+            // Fix: High Social Need (Low Value) causes stress, not high value
+            if ((agent.social ?? 0) < 10) stressPenalty += GAME_BALANCE.EMOTIONAL.STRESS_PENALTY_HIGH_SOCIAL; 
             
             // Environmental Stressors (Noise)
             if ((localEnv.noise ?? 0) > 0.8 && agent.persona.stressProneness > 0.5) {

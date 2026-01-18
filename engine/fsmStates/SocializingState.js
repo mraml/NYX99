@@ -54,7 +54,13 @@ const Actions = {
         if (agent.stateContext.searchTicks > 10) {
             agent.stateContext.waitingForReply = false;
             agent.stateContext.targetAgentId = null;
-            return Status.FAILURE; // Give up on this specific target
+            
+            // FIX: Don't just return FAILURE (which falls through to search).
+            // Explicitly give up or switch mode to prevent rapid loop.
+            if (Math.random() < 0.5) {
+                 return Actions.StartDigitalChat(agent); // Fallback to phone
+            }
+            return Actions.EndConversation(agent, { reason: "No reply." });
         }
 
         // Success check: Target is now socializing with US

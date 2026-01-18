@@ -21,14 +21,21 @@ const Actions = {
 
         // Calculate
         const path = worldGraph.findPath(agent.locationId, agent.targetLocationId);
-        if (!path) {
+        if (!path || path.length === 0) {
+            // Fallback: If no path found, maybe just move directly to target if connected or as emergency
+            // But for simulation realism, let's abort if unconnected.
             return Actions.AbortCommute(agent, "No path found.");
         }
 
         // Clean path (remove current node if present)
-        if (path.length > 0 && path[0] === agent.locationId) path.shift();
+        if (path[0] === agent.locationId) path.shift();
         
         agent.stateContext.currentPath = path;
+        
+        if (agent.lod === 1) {
+            console.log(`[${agent.name}] Planned route to ${agent.targetLocationId} (${path.length} stops)`);
+        }
+        
         return Status.SUCCESS;
     },
 
@@ -46,99 +53,62 @@ const Actions = {
         const nextNodeId = path.shift();
         
         // Calculate Cost
-        const travelTicks = worldGraph.getEdgeTravelTicks 
-            ? worldGraph.getEdgeTravelTicks(agent.locationId, nextNodeId)
-            : worldGraph.getTravelCost(agent.locationId, nextNodeId) / 1.5; 
+        // Standardized travel time: Distance * Multiplier (e.g. 15 mins per hop roughly)
+        const dist = worldGraph.getDistance(agent.locationId, nextNodeId) || 1;
+        const travelTicks = Math.max(1, Math.ceil(dist * 2)); // 2 ticks per unit distance
 
         // Set Transit State
         agent.transitFrom = agent.locationId;
         agent.transitTo = nextNodeId;
         agent.travelTimer = travelTicks;
         agent.stateContext.isTraveling = true;
-        agent.stateContext.travelCostPaid = false;
+        
+        // Determine Mode (Simulated)
+        // If distance is short (< 2), walk. Else, take subway/taxi.
+        if (dist <= 2) {
+            agent.stateContext.transportMode = 'walking';
+            agent.currentActivity = 'Walking to ' + nextNodeId;
+        } else {
+            agent.stateContext.transportMode = 'transit';
+            agent.currentActivity = 'Taking subway to ' + nextNodeId;
+            // Fare logic
+            if ((agent.money || 0) >= 2.75) {
+                agent.money -= 2.75;
+            }
+        }
 
         return { isDirty: true, walOp: { op: 'AGENT_STATE_UPDATE', data: { state: 'fsm_in_transit' } } };
     },
 
     HandleTransitTick: (agent, { hour, worldState }) => {
-        let walOp = null;
-        
-        // Check Weather Belief (updated by perceptionService)
-        const weather = (agent.beliefs && agent.beliefs.weather) ? agent.beliefs.weather : 'Clear';
-        const isBadWeather = weather.includes('Rain') || weather.includes('Snow') || weather.includes('Storm');
-
-        // 1. Pay Logic (Run once per hop)
-        if (!agent.stateContext.travelCostPaid) {
-            const cost = worldGraph.getTravelCost(agent.transitFrom, agent.transitTo);
-            const wealth = agent.money ?? 0;
-            
-            // Logic: Walk if short distance, UNLESS bad weather and rich enough
-            let preferWalking = cost <= 1;
-            
-            if (isBadWeather && wealth > 20) {
-                preferWalking = false; // Take transit if you can afford it
-            }
-
-            if (preferWalking) {
-                agent.stateContext.transportMode = 'walking';
-            } else {
-                if (wealth >= cost) {
-                    agent.money -= cost;
-                    agent.stateContext.transportMode = 'transit';
-                    walOp = { op: 'AGENT_TRAVEL', data: { cost, from: agent.transitFrom, to: agent.transitTo } };
-                } else {
-                    // Too poor for transit, forced to sneak or walk. 
-                    // If weather is bad, they might try to sneak.
-                    if (isBadWeather && Math.random() < 0.5) {
-                         agent.stateContext.transportMode = 'transit_sneaking';
-                         agent.stress = Math.min(100, (agent.stress ?? 0) + 15);
-                         walOp = { op: 'AGENT_TRAVEL', data: { cost: 0, from: agent.transitFrom, to: agent.transitTo, sneaking: true } };
-                    } else {
-                         // Default to walking if broke
-                         agent.stateContext.transportMode = 'walking';
-                    }
-                }
-            }
-            agent.stateContext.travelCostPaid = true;
-        }
-
-        // 2. Exertion & Weather Impact
-        if (agent.stateContext.transportMode === 'walking') {
-            agent.energy = Math.max(0, (agent.energy ?? 0) - 0.2);
-            
-            if (isBadWeather) {
-                agent.mood = Math.max(0, (agent.mood ?? 0) - 0.5); // Getting wet makes you grumpy
-                agent.energy -= 0.1; // Slog through snow/rain
-                if (Math.random() < 0.05) {
-                     // Chance to complain
-                     if (agent.lod === 1) console.log(`[${agent.name}] Ugh, walking in this ${weather} sucks.`);
-                }
-            }
-        } else {
-            // Transit is easier
-            agent.energy = Math.max(0, (agent.energy ?? 0) - 0.05);
-        }
-
-        // 3. Time Logic
+        // 1. Time Logic
         agent.travelTimer = (agent.travelTimer ?? 0) - 1;
 
-        // 4. Flavor Event
-        if (Math.random() < 0.005) {
-            const evt = agent.stateContext.transportMode === 'walking' ? "stepped in a puddle" : "saw a rat";
-            agent.mood -= 2;
+        // 2. Weather Impact (from Beliefs)
+        const weather = (agent.beliefs && agent.beliefs.weather) ? agent.beliefs.weather : 'Clear';
+        const isBadWeather = weather.includes('Rain') || weather.includes('Snow');
+
+        if (agent.stateContext.transportMode === 'walking') {
+            agent.energy = Math.max(0, (agent.energy ?? 0) - 0.5); // Walking is tiring
+            if (isBadWeather) {
+                agent.mood = Math.max(0, (agent.mood ?? 0) - 1.0);
+            }
+        } else {
+            agent.energy = Math.max(0, (agent.energy ?? 0) - 0.1); // Sitting on train is easy
         }
 
-        return { isDirty: true, walOp };
+        return { isDirty: true, walOp: null };
     },
 
     CompleteHop: (agent) => {
         // Arrived at intermediate node
+        // Teleport prevention: We only update locationId HERE, after timer finishes.
         agent.locationId = agent.transitTo;
         agent.transitFrom = null;
         agent.transitTo = null;
         agent.stateContext.isTraveling = false;
         
-        // If final destination, Arrival logic will handle it next tick
+        // If final destination, Arrival logic will handle it next tick via IsAtDestination check
         return Status.SUCCESS;
     },
 
@@ -146,7 +116,15 @@ const Actions = {
     ProcessArrival: (agent) => {
         // We are at the target
         const originalGoal = agent.intentionStack?.[agent.intentionStack.length - 1]?.goal || 'fsm_idle';
-        if (agent.intentionStack) agent.intentionStack.pop();
+        
+        // If we were commuting to do something specific (from intention), we are done commuting.
+        // Pop the 'fsm_commuting' intention if it was pushed? 
+        // Actually, usually the intention IS the goal (e.g. 'fsm_working'), and we just use CommutingState to get there.
+        // So we transition to that goal state now.
+        
+        if (agent.lod === 1) {
+            console.log(`[${agent.name}] Arrived at ${agent.locationId}. Switching to ${originalGoal}.`);
+        }
 
         return { 
             isDirty: true, 
@@ -166,34 +144,32 @@ const Conditions = {
 // === 2. BEHAVIOR TREE ===
 
 const CommutingTree = new Selector([
-    // 1. Are we there yet? (Final Arrival)
+    // 1. Check if we have arrived at the FINAL destination
     new Sequence([
         new Condition(Conditions.IsAtDestination),
         new Action(Actions.ProcessArrival)
     ]),
 
-    // 2. Are we currently moving between nodes? (In Transit)
+    // 2. Handle Active Travel (Moving between nodes)
     new Selector([
-        // A. Transit Finished -> Update Location
+        // A. Hop Finished? -> Update Location
         new Sequence([
             new Condition(Conditions.IsHopComplete),
             new Action(Actions.CompleteHop)
         ]),
-        // B. Still Moving -> Tick
+        // B. Still Moving? -> Tick Timer
         new Sequence([
             new Condition(Conditions.IsTraveling),
             new Action(Actions.HandleTransitTick)
         ])
     ]),
 
-    // 3. Do we need a path? (Planning)
+    // 3. Planning (If not traveling and not at dest)
     new Sequence([
-        // If we aren't traveling and don't have a path...
-        // Note: Using Inverter checks effectively
-        new Action(Actions.FindPath) // This action returns SUCCESS if path found, FAILURE/Action if error
+        new Action(Actions.FindPath) // Returns SUCCESS if path found/exists
     ]),
 
-    // 4. Ready to start next leg? (Execution)
+    // 4. Start Next Leg (If we have a path)
     new Sequence([
         new Condition(Conditions.HasPath),
         new Action(Actions.SetupNextHop)
@@ -208,18 +184,15 @@ export class CommutingState extends BaseState {
         this._updateActivityFromState(agent);
         
         // Initialize State Context
-        // Note: We don't clear path if it exists, to allow resuming? 
-        // Safer to clear to ensure recalculation against current graph.
         if (!agent.stateContext.isTraveling) {
             agent.stateContext.currentPath = null;
             agent.stateContext.isTraveling = false;
+            agent.stateContext.transportMode = 'transit';
         }
     }
 
     tick(agent, hour, localEnv, worldState) {
-        // Note: We handle base tick manually inside Transit logic if needed, 
-        // or call super() but with overrides.
-        // For commuting, we usually skip standard boredom/social decay.
+        // Skip standard boredom decay while commuting (focused)
         super.tick(agent, hour, localEnv, worldState, { skipBoredom: true });
 
         const context = { hour, localEnv, worldState, transition: null };
@@ -227,6 +200,7 @@ export class CommutingState extends BaseState {
 
         if (context.transition) return context.transition;
         
-        return { isDirty: context.isDirty || false, walOp: context.walOp };
+        // Update UI every tick during travel to show progress
+        return { isDirty: true, walOp: context.walOp };
     }
 }
