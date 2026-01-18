@@ -1,7 +1,7 @@
 import { BaseState } from './BaseState.js';
 import { Selector, Sequence, Condition, Action, Status } from '../BehaviorTreeCore.js';
 import worldGraph from '../../data/worldGraph.js';
-import eventBus from '../eventBus.js';
+import eventBus from '../../engine/eventBus.js';
 
 // === 1. LEAF NODES ===
 
@@ -62,32 +62,60 @@ const Actions = {
 
     HandleTransitTick: (agent, { hour, worldState }) => {
         let walOp = null;
+        
+        // Check Weather Belief (updated by perceptionService)
+        const weather = (agent.beliefs && agent.beliefs.weather) ? agent.beliefs.weather : 'Clear';
+        const isBadWeather = weather.includes('Rain') || weather.includes('Snow') || weather.includes('Storm');
 
         // 1. Pay Logic (Run once per hop)
         if (!agent.stateContext.travelCostPaid) {
             const cost = worldGraph.getTravelCost(agent.transitFrom, agent.transitTo);
+            const wealth = agent.money ?? 0;
             
-            if (cost <= 1) {
+            // Logic: Walk if short distance, UNLESS bad weather and rich enough
+            let preferWalking = cost <= 1;
+            
+            if (isBadWeather && wealth > 20) {
+                preferWalking = false; // Take transit if you can afford it
+            }
+
+            if (preferWalking) {
                 agent.stateContext.transportMode = 'walking';
             } else {
-                if ((agent.money ?? 0) >= cost) {
+                if (wealth >= cost) {
                     agent.money -= cost;
                     agent.stateContext.transportMode = 'transit';
                     walOp = { op: 'AGENT_TRAVEL', data: { cost, from: agent.transitFrom, to: agent.transitTo } };
                 } else {
-                    agent.stateContext.transportMode = 'transit_sneaking';
-                    agent.stress = Math.min(100, (agent.stress ?? 0) + 15);
-                    walOp = { op: 'AGENT_TRAVEL', data: { cost: 0, from: agent.transitFrom, to: agent.transitTo, sneaking: true } };
+                    // Too poor for transit, forced to sneak or walk. 
+                    // If weather is bad, they might try to sneak.
+                    if (isBadWeather && Math.random() < 0.5) {
+                         agent.stateContext.transportMode = 'transit_sneaking';
+                         agent.stress = Math.min(100, (agent.stress ?? 0) + 15);
+                         walOp = { op: 'AGENT_TRAVEL', data: { cost: 0, from: agent.transitFrom, to: agent.transitTo, sneaking: true } };
+                    } else {
+                         // Default to walking if broke
+                         agent.stateContext.transportMode = 'walking';
+                    }
                 }
             }
             agent.stateContext.travelCostPaid = true;
         }
 
-        // 2. Exertion Logic
+        // 2. Exertion & Weather Impact
         if (agent.stateContext.transportMode === 'walking') {
             agent.energy = Math.max(0, (agent.energy ?? 0) - 0.2);
-            // Weather check could go here
+            
+            if (isBadWeather) {
+                agent.mood = Math.max(0, (agent.mood ?? 0) - 0.5); // Getting wet makes you grumpy
+                agent.energy -= 0.1; // Slog through snow/rain
+                if (Math.random() < 0.05) {
+                     // Chance to complain
+                     if (agent.lod === 1) console.log(`[${agent.name}] Ugh, walking in this ${weather} sucks.`);
+                }
+            }
         } else {
+            // Transit is easier
             agent.energy = Math.max(0, (agent.energy ?? 0) - 0.05);
         }
 

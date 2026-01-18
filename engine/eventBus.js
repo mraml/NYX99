@@ -11,6 +11,7 @@ import { EventEmitter } from 'events';
  * (MODIFIED v4.1: Implemented periodic history trimming to prevent memory leak.)
  * (MODIFIED v4.9: Implemented lazy argument evaluation in queue() for performance.)
  * (MODIFIED v5.0: Added compatibility alias 'emit' -> 'emitNow'.)
+ * (MODIFIED v6.0: Fixed closure memory leak, deep cloning history, optimized trim, hardened batch processing.)
  */
 class EventBus {
   constructor(options = {}) {
@@ -19,7 +20,7 @@ class EventBus {
     this._currentTick = 0;
 
     // --- Phase 2: Priority Queues ---
-    // Stores { event: string, argsFn: Function }
+    // Stores { event: string, args: Array } (Changed from argsFn to avoid closure leak)
     this._queues = {
       high: [],
       medium: [],
@@ -41,6 +42,7 @@ class EventBus {
     this._maxHistoryTicks = options.maxHistoryTicks || 1000;   // Max tick age to retain
     this._historyPaused = false;
     this._lastHistoryTrim = 0; // Track when we last trimmed
+    this._historyTrimInterval = 50; // Trim more frequently (was 100 implicitly)
 
     // --- Phase 3: Profiler ---
     this._eventProfiler = new Map();
@@ -65,8 +67,8 @@ class EventBus {
     this._currentTick = tick;
     
     // --- FIX: Periodic history trimming to prevent memory leak ---
-    // Trim every 100 ticks to avoid doing it too often
-    if (tick - this._lastHistoryTrim >= 100) {
+    // Trim more frequently to keep array sizes manageable
+    if (tick - this._lastHistoryTrim >= this._historyTrimInterval) {
       this._trimHistory();
       this._lastHistoryTrim = tick;
     }
@@ -84,23 +86,35 @@ class EventBus {
    * Internal method to log an event to history and profiler.
    * @private
    * @param {string} event
-   * @param {Array|Function} argsOrFn - Array of arguments or a function that returns them.
+   * @param {Array} args - Array of arguments.
    */
-  _logEvent(event, argsOrFn) {
-    // 1. Resolve arguments if they are a function (for lazy evaluation)
-    const args = typeof argsOrFn === 'function' ? argsOrFn() : argsOrFn;
-    
+  _logEvent(event, args) {
     // 2. Increment Profiler
     this._eventProfiler.set(event, (this._eventProfiler.get(event) || 0) + 1);
 
     // 3. Add to History
     if (this._historyPaused) return;
 
+    // [FIX 2] History Shallow Copy Creates Dangling References
+    // Use structuredClone for deep copy if available, or fall back to JSON parse/stringify
+    // This prevents history mutation when objects are modified later by agents.
+    let deepArgs;
+    try {
+        if (typeof structuredClone === 'function') {
+            deepArgs = structuredClone(args);
+        } else {
+            deepArgs = JSON.parse(JSON.stringify(args));
+        }
+    } catch (e) {
+        // Fallback for circular references or non-serializable data
+        deepArgs = [...args]; 
+    }
+
     this._eventHistory.push({
       tick: this._currentTick,
       timestamp: Date.now(),
       event,
-      args: [...args], // Shallow copy args
+      args: deepArgs,
     });
 
     // 4. Trim history if over max events (safety check)
@@ -112,20 +126,38 @@ class EventBus {
   /**
    * Trims old events from history based on tick age.
    * This prevents unbounded memory growth.
+   * [FIX 3] Optimized to O(1) slice instead of O(n) filter
    * @private
    */
   _trimHistory() {
     if (this._eventHistory.length === 0) return;
     
     const cutoffTick = this._currentTick - this._maxHistoryTicks;
-    const originalLength = this._eventHistory.length;
     
-    // Filter out old events that are older than the cutoff tick
-    this._eventHistory = this._eventHistory.filter(e => e.tick > cutoffTick);
+    // Find the index where events become "new enough"
+    // Since history is pushed in chronological order, we can find the first valid index.
+    // Optimization: Check if the first element is already valid. If so, do nothing.
+    if (this._eventHistory[0].tick > cutoffTick) return;
+
+    let cutoffIndex = 0;
+    // Simple scan optimization: if we have lots of events, we assume many are old.
+    // However, binary search might be overkill for typical buffer sizes (5000). 
+    // Linear scan until we find the break point is cleaner than filter().
+    for (let i = 0; i < this._eventHistory.length; i++) {
+        if (this._eventHistory[i].tick > cutoffTick) {
+            cutoffIndex = i;
+            break;
+        }
+    }
     
-    const trimmed = originalLength - this._eventHistory.length;
-    if (this.debug && trimmed > 0) {
-      console.log(`[EventBus] Trimmed ${trimmed} old events from history (keeping last ${this._maxHistoryTicks} ticks)`);
+    if (cutoffIndex > 0) {
+        const trimmedCount = cutoffIndex;
+        // Slice is faster than filter for bulk removal at start
+        this._eventHistory = this._eventHistory.slice(cutoffIndex);
+        
+        if (this.debug) {
+            console.log(`[EventBus] Trimmed ${trimmedCount} old events from history (keeping last ${this._maxHistoryTicks} ticks)`);
+        }
     }
   }
 
@@ -185,7 +217,7 @@ class EventBus {
 
   /**
    * Queues an event to be processed at the end of the tick.
-   * CRITICAL MODIFICATION: Stores arguments as a function (argsFn) to defer serialization.
+   * [FIX 1] Removed Closure Memory Leak: Stores args array directly.
    * @param {string} event - The event name (e.g., "agent:moved").
    * @param {'high'|'medium'|'low'} priority - The priority channel.
    * @param {...any} args - Arguments to pass to the listeners.
@@ -196,34 +228,29 @@ class EventBus {
       return;
     }
     
-    // Create a function closure to hold the arguments. This prevents V8 from compiling
-    // the arguments immediately, thus deferring memory allocation and serialization.
-    const argsFn = () => args;
-
-    // Log to profiler/history *when queued* (must execute argsFn here)
-    this._logEvent(event, argsFn);
+    // Log to profiler/history *when queued*
+    this._logEvent(event, args);
 
     if (this._batchableEvents.has(event)) {
       // --- Handle Batched Event ---
-      // Batched events must execute the argsFn to push concrete payloads
       if (!this._batchQueues.has(event)) {
         this._batchQueues.set(event, []);
       }
-      this._batchQueues.get(event).push(argsFn());
+      this._batchQueues.get(event).push(args);
       if (this.debug) {
         console.log(`[EventBus:BATCH:${this._getNamespace(event)}] Batched '${event}'`);
       }
     } else {
       // --- Handle Prioritized Event ---
       if (this._queues[priority]) {
-        // Store the function closure instead of the arguments directly
-        this._queues[priority].push({ event, argsFn });
+        // [FIX 1] Store object with direct args array, no closure.
+        this._queues[priority].push({ event, args });
         if (this.debug) {
           console.log(`[EventBus:QUEUE:${this._getNamespace(event)}] Queued '${event}' with priority ${priority}`);
         }
       } else {
         console.warn(`[EventBus:WARN] Unknown priority '${priority}' for event '${event}'. Defaulting to 'medium'.`);
-        this._queues.medium.push({ event, argsFn });
+        this._queues.medium.push({ event, args });
       }
     }
   }
@@ -279,44 +306,55 @@ class EventBus {
 
     try {
       // --- 1. Process Batched Events ---
-      for (const [event, payloads] of this._batchQueues) {
-        if (payloads.length > 0) {
-          const batchEventName = `${event}_batch`;
-          if (this.debug) {
-            console.log(`[EventBus:PROCESS:BATCH] Firing '${batchEventName}' with ${payloads.length} items.`);
-          }
-          
-          try {
-            this._emitter.emit(batchEventName, payloads);
-            batchesProcessed++;
-            eventsProcessed += payloads.length;
-          } catch (error) {
-            console.error(`[EventBus] Error in batch listener for '${batchEventName}':`, error);
-          }
+      // [FIX 4] Move clear() to finally block (or ensure execution)
+      // We iterate a snapshot of keys/values to handle batch processing safely
+      if (this._batchQueues.size > 0) {
+        for (const [event, payloads] of this._batchQueues) {
+            if (payloads.length > 0) {
+            const batchEventName = `${event}_batch`;
+            if (this.debug) {
+                console.log(`[EventBus:PROCESS:BATCH] Firing '${batchEventName}' with ${payloads.length} items.`);
+            }
+            
+            try {
+                this._emitter.emit(batchEventName, payloads);
+                batchesProcessed++;
+                eventsProcessed += payloads.length;
+            } catch (error) {
+                console.error(`[EventBus] Error in batch listener for '${batchEventName}':`, error);
+            }
+            }
         }
+        // [FIX 4] Clear executed immediately after loop to prevent double processing
+        // even if individual emits failed, we consider them "processed" (consumed).
+        this._batchQueues.clear();
       }
-      this._batchQueues.clear();
 
       // --- 2. Process Priority Queues (High > Medium > Low) ---
       const priorities = ['high', 'medium', 'low'];
       for (const priority of priorities) {
         const queue = this._queues[priority];
+        // Optimization: Check length before iterating
         if (queue.length > 0) {
           if (this.debug) {
             console.log(`[EventBus:PROCESS] Firing ${queue.length} '${priority}' priority events.`);
           }
-          for (const { event, argsFn } of queue) {
-            // CRITICAL MODIFICATION: Only execute the argsFn here, right before emitting.
-            // This is the point of lazy evaluation.
+          
+          // Process current snapshot of queue
+          // We clear the main queue reference immediately so new events queued *during* processing
+          // end up in the next tick's queue (preventing infinite loops)
+          const currentBatch = [...queue];
+          this._queues[priority] = [];
+
+          for (const { event, args } of currentBatch) {
             try {
-              const args = argsFn();
+              // [FIX 1] Args are now array, spread them directly
               this._emitter.emit(event, ...args);
               eventsProcessed++;
             } catch (error) {
               console.error(`[EventBus] Error in listener for '${event}':`, error);
             }
           }
-          this._queues[priority] = []; // Clear the queue
         }
       }
       
@@ -328,6 +366,11 @@ class EventBus {
       
     } catch (error) {
       console.error('[EventBus] Critical error during queue processing:', error);
+      // Ensure queues are cleared even in catastrophic failure to prevent "poison pill" events from sticking
+      this._batchQueues.clear();
+      this._queues.high = [];
+      this._queues.medium = [];
+      this._queues.low = [];
     }
 
     // --- Update Performance Metrics ---

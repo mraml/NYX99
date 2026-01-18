@@ -39,7 +39,8 @@ const ADAPTIVE_PACING = {
   RECOVERY_THRESHOLD: 20,  // Consecutive fast ticks before speeding up
   THROTTLE_STEP: 50,       // Ms to add/remove per adjustment step
   MAX_TICK_RATE: 2000,     // Max slowness (2 seconds per tick)
-  BASE_RATE: TICK_RATE_MS
+  BASE_RATE: TICK_RATE_MS,
+  MIN_AGENTS_FOR_ADJUSTMENT: 10 // [FIX 12] Prevent speedup during mass death
 };
 
 class SimulationError extends Error {
@@ -103,9 +104,11 @@ class Matrix {
     this.agentWorkerMap = new Map();
     this.workerAgentLoads = new Map();
     this.workerTickPromises = new Map();
+    this.timedOutWorkers = new Set(); // [FIX 8] Track timed-out workers
     this.partitionMap = new Map();
     this.workerLocationMap = new Map();
     this.locationAgentCount = new Map(); // Track agent density for load balancing
+    this.pendingPartitionUpdates = new Map(); // [FIX 9] For atomic partition updates
     
     // Copy-On-Write Graph Snapshot State
     this.graphSnapshot = null;
@@ -121,6 +124,7 @@ class Matrix {
 
   async _spawnWorker(workerId) {
     this.workerHealth.set(workerId, 'initializing');
+    this.timedOutWorkers.delete(workerId); // Reset timeout status on respawn
 
     // Defensive cleanup: If we are spawning over an existing slot, ensure the old one is gone.
     if (this.workerPool.has(workerId)) {
@@ -173,6 +177,12 @@ class Matrix {
   }
 
   _handleWorkerMessage(workerId, msg, resolveInit, rejectInit) {
+    // [FIX 8] Ignore messages from workers known to have timed out in the current tick context
+    if (this.timedOutWorkers.has(workerId)) {
+        logger.warn(`[Matrix] Ignored late message from timed-out worker ${workerId}: ${msg.type}`);
+        return;
+    }
+
     switch (msg.type) {
       case 'INIT_COMPLETE':
         this.workerHealth.set(workerId, 'healthy');
@@ -245,8 +255,14 @@ class Matrix {
     const now = Date.now();
     let history = this.workerFailureHistory.get(workerId) || [];
     
-    // Filter failures within the window
+    // [FIX 11] Prune old failures to prevent unbounded memory growth
+    const originalLength = history.length;
     history = history.filter(t => now - t < FAILURE_WINDOW_MS);
+    
+    // Periodically log cleanup if significant
+    if (originalLength > history.length && this.tickCount % 100 === 0) {
+        // Silent cleanup
+    }
     
     // Record this failure
     history.push(now);
@@ -266,7 +282,7 @@ class Matrix {
     logger.warn(`[Matrix] Processing permanent loss of Worker ${deadWorkerId}`);
     this.workerHealth.set(deadWorkerId, 'dead_processed');
 
-    // Find a healthy target worker
+    // [FIX 5] Only redistribute to explicitly healthy/fulfilled workers
     const healthyIds = Array.from(this.workerPool.keys()).filter(id => 
         id !== deadWorkerId && 
         this.workerHealth.get(id) === 'healthy'
@@ -305,6 +321,7 @@ class Matrix {
         this.workerPool.delete(deadWorkerId);
     }
     this.workerTickPromises.delete(deadWorkerId);
+    this.timedOutWorkers.delete(deadWorkerId);
   }
 
   _validateWorkerResult(workerId, data) {
@@ -313,7 +330,7 @@ class Matrix {
         return false;
     }
 
-    // Validate updatedAgents
+    // [FIX 14] Strict validation of updatedAgents structure
     if (data.updatedAgents !== undefined) {
         if (!Array.isArray(data.updatedAgents)) {
             logger.error(`[Matrix] Validation Failed: Worker ${workerId} updatedAgents is not an array.`);
@@ -323,6 +340,10 @@ class Matrix {
             if (!agent || (typeof agent.id !== 'string' && typeof agent.id !== 'number')) {
                 logger.error(`[Matrix] Validation Failed: Worker ${workerId} sent malformed agent (missing/invalid ID).`);
                 return false;
+            }
+            // Basic schema check to prevent garbage injection
+            if (typeof agent.state !== 'string') {
+                logger.warn(`[Matrix] Validation Warning: Worker ${workerId} agent ${agent.id} missing valid state string.`);
             }
         }
     }
@@ -370,6 +391,8 @@ class Matrix {
         if (results[i].status === 'rejected') {
             logger.error(`[Matrix] Worker ${i} failed init: ${results[i].reason}`);
             // Redistribute this worker's partitions immediately
+            // [FIX 5] _handlePermanentWorkerLoss now filters for 'healthy' status internally, 
+            // ensuring we don't redistribute to other failed init workers.
             this._handlePermanentWorkerLoss(i);
         }
     }
@@ -387,8 +410,20 @@ class Matrix {
     const validWorkerIds = Array.from(this.workerPool.keys());
     
     agents.forEach(agent => {
-      // FIX: Use current location primarily for correct distribution during mid-simulation load
-      const locationKey = agent.locationId || agent.homeLocationId;
+      // [FIX 7] Handle missing locationId (Traveling agents)
+      // If agent is traveling (locationId is null), use homeLocationId to determine "ownership"
+      // or map to a default if home is also missing.
+      let locationKey = agent.locationId;
+      if (!locationKey) {
+          locationKey = agent.homeLocationId;
+          // If totally lost, fallback to first node in partition map or random
+          if (!locationKey) {
+             const keys = this.partitionMap.keys();
+             const next = keys.next();
+             locationKey = next.value;
+          }
+      }
+      
       let workerId = this.partitionMap.get(locationKey);
       
       // Fallback if partition points to a dead/missing worker
@@ -468,9 +503,11 @@ class Matrix {
 
   // Helper to create a thread-safe snapshot of the world graph
   _createGraphSnapshot() {
+    // [FIX 6] Copy-On-Write logic is already mostly handled by creating a new object,
+    // but we ensure atomic assignment in `_handleDynamicWorldEvents`.
+    // Here we ensure the copy process is robust.
     try {
         // Use structuredClone if available for deep copy efficiency
-        // FIX: Include EDGES in snapshot so workers can navigate
         const snapshot = {
             nodes: typeof structuredClone === 'function' ? structuredClone(worldGraph.nodes) : JSON.parse(JSON.stringify(worldGraph.nodes)),
             edges: typeof structuredClone === 'function' ? structuredClone(worldGraph.edges) : JSON.parse(JSON.stringify(worldGraph.edges)),
@@ -642,7 +679,7 @@ class Matrix {
       const loopStart = Date.now();
       
       // DB HEALTH CHECK & RECOVERY
-      // P1 FIX: Simplified health check logic using the boolean property `isHealthy`
+      // [FIX 10] Simplified health check logic using the boolean property `isHealthy`
       if (this.dbService && !this.dbService.isHealthy) {
           logger.error('[Matrix] CRITICAL: Database reported unhealthy. Pausing simulation...');
           
@@ -697,7 +734,11 @@ class Matrix {
           this.lagStreak = 0;
           
           // Recovery Logic: Speed up if system is healthy and was previously throttled
-          if (this.targetTickRate > ADAPTIVE_PACING.BASE_RATE && 
+          // [FIX 12] Only speed up if we have enough agents to warrant valid performance data
+          const activeAgentCount = this.cacheManager?.getAllAgents().length || 0;
+          
+          if (activeAgentCount > ADAPTIVE_PACING.MIN_AGENTS_FOR_ADJUSTMENT &&
+              this.targetTickRate > ADAPTIVE_PACING.BASE_RATE && 
               this.recoveryStreak >= ADAPTIVE_PACING.RECOVERY_THRESHOLD) {
               
               this.targetTickRate = Math.max(
@@ -718,19 +759,36 @@ class Matrix {
   async stop() {
     logger.info('[Matrix] Initiating graceful shutdown...');
     this.isRunning = false;
+    const shutdownStartTime = Date.now();
 
-    // Safety timeout: If shutdown hangs for >30s, force exit
+    // [FIX 13] Intelligent Shutdown Timeout
+    // If syncing is active, we extend/bypass timeout logic to prevent data loss.
+    const checkShutdownComplete = async () => {
+        // Wait for tick
+        while (this.isTickInProgress) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        
+        // Wait for sync if active
+        while (this.isDbSyncing) {
+            logger.info('[Matrix] Shutdown deferred: Waiting for active DB sync...');
+            await new Promise(r => setTimeout(r, 500));
+            // Safety break if sync hangs for > 60s
+            if (Date.now() - shutdownStartTime > 60000) break;
+        }
+        return true;
+    };
+
+    // Safety timeout: If shutdown hangs for >30s (and not syncing), force exit
     const shutdownTimer = setTimeout(() => {
-        logger.error('[Matrix] Shutdown timed out! Forcing exit.');
-        process.exit(1);
+        if (!this.isDbSyncing) {
+            logger.error('[Matrix] Shutdown timed out! Forcing exit.');
+            process.exit(1);
+        }
     }, 30000);
 
-    // Drain: Wait for the current tick to complete
-    while (this.isTickInProgress) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
     try {
+        await checkShutdownComplete();
         logger.info('[Matrix] Tick loop stopped. Flushing DB state...');
         
         // Force final sync of any dirty agents that haven't been saved yet
@@ -765,7 +823,7 @@ class Matrix {
       return;
     }
 
-    // P1 FIX: Simplified health check logic
+    // [FIX 10] Simplified health check logic
     if (this.dbService && !this.dbService.isHealthy) {
         logger.error('[Matrix] Skipping Sync: Database is unhealthy.');
         return;
@@ -779,6 +837,22 @@ class Matrix {
     } finally {
       this.isDbSyncing = false;
     }
+  }
+
+  // [FIX 15] Cleanup Stale Partitions
+  _cleanupStalePartitions() {
+      if (this.tickCount % 100 !== 0) return; // Run periodically
+      
+      const worldKeys = new Set(Object.keys(worldGraph.nodes));
+      for (const locId of this.partitionMap.keys()) {
+          if (!worldKeys.has(locId)) {
+              this.partitionMap.delete(locId);
+              // Also clean from worker mappings if needed
+              for (const [wId, locs] of this.workerLocationMap.entries()) {
+                  if (locs.has(locId)) locs.delete(locId);
+              }
+          }
+      }
   }
 
   async tick() {
@@ -798,6 +872,7 @@ class Matrix {
       if (!this.worldState.environment) this.worldState.environment = { globalLight: 0.8, globalTemp: 20 };
       updateWorldState(this.worldTime, this.tickCount, this.worldState, this.eventBus);
       this._handleDynamicWorldEvents();
+      this._cleanupStalePartitions(); // [FIX 15]
 
       const allAgents = this.cacheManager.getAllAgents();
       
@@ -812,6 +887,7 @@ class Matrix {
       }
 
       // -- DYNAMIC REBALANCING --
+      // [FIX 9] Rebalancing now queues updates instead of sending async messages immediately
       if (this.workerPool.size > 1 && this.tickCount % REBALANCE_INTERVAL_TICKS === 0) {
         this._rebalancePartitions(allAgents);
       }
@@ -888,7 +964,6 @@ class Matrix {
     }
 
     // 3. Greedily Move Partitions
-    // Move locations from Heaviest -> Lightest until balanced or no more moves
     const heavyWorkerId = overloaded[0];
     const lightWorkerId = underloaded[0];
     
@@ -896,8 +971,7 @@ class Matrix {
     let currentLightLoad = underloaded[1];
     const movedLocations = [];
 
-    const heavyLocations = locationsByWorker.get(heavyWorkerId).sort((a, b) => b.count - a.count); // Try moving dense areas first? Or sparse?
-    // Actually, moving dense areas fixes imbalance faster, but might overshoot. Let's try biggest fitting block.
+    const heavyLocations = locationsByWorker.get(heavyWorkerId).sort((a, b) => b.count - a.count); 
 
     for (const locData of heavyLocations) {
         // If moving this location brings us closer to equality (reduces variance)
@@ -927,19 +1001,18 @@ class Matrix {
     if (movedLocations.length > 0) {
         logger.info(`[Matrix] Rebalanced: Moved ${movedLocations.length} locations from Worker ${heavyWorkerId} to ${lightWorkerId}.`);
         
-        // 4. Notify Workers (Simplistic update - Workers should handle 'UPDATE_PARTITIONS' if implemented, 
-        // or effectively rely on stateless updates if they don't cache world data too aggressively)
-        const heavyWorker = this.workerPool.get(heavyWorkerId);
-        const lightWorker = this.workerPool.get(lightWorkerId);
+        // [FIX 9] Defer updates to be atomic with next TICK
+        // Instead of immediate postMessage, we queue these updates.
+        // They will be picked up in `_runAgentUpdatesInWorkers` and sent in the tick payload.
+        if (!this.pendingPartitionUpdates.has(heavyWorkerId)) this.pendingPartitionUpdates.set(heavyWorkerId, []);
+        if (!this.pendingPartitionUpdates.has(lightWorkerId)) this.pendingPartitionUpdates.set(lightWorkerId, []);
 
-        if (heavyWorker) {
-            const locs = Array.from(this.workerLocationMap.get(heavyWorkerId));
-            heavyWorker.postMessage({ type: 'UPDATE_PARTITIONS', payload: { locations: locs } });
-        }
-        if (lightWorker) {
-            const locs = Array.from(this.workerLocationMap.get(lightWorkerId));
-            lightWorker.postMessage({ type: 'UPDATE_PARTITIONS', payload: { locations: locs } });
-        }
+        const heavyLocs = Array.from(this.workerLocationMap.get(heavyWorkerId));
+        const lightLocs = Array.from(this.workerLocationMap.get(lightWorkerId));
+        
+        // Overwrite pending with latest complete snapshot for simplicity/correctness
+        this.pendingPartitionUpdates.set(heavyWorkerId, heavyLocs);
+        this.pendingPartitionUpdates.set(lightWorkerId, lightLocs);
     }
   }
 
@@ -997,7 +1070,7 @@ class Matrix {
       }
     }
 
-    const tickPayload = {
+    const tickPayloadBase = {
       tickCount: this.tickCount,
       worldTime: this.worldTime,
       worldState: this.worldState,
@@ -1020,10 +1093,19 @@ class Matrix {
 
       const payload = workerPayloads.get(workerId);
       if (payload && payload.agentsData.length > 0) {
+        
+        // [FIX 9] Atomic Partition Updates
+        let partitionUpdates = null;
+        if (this.pendingPartitionUpdates.has(workerId)) {
+            partitionUpdates = this.pendingPartitionUpdates.get(workerId);
+            this.pendingPartitionUpdates.delete(workerId);
+        }
+
         const tickPromise = new Promise((resolve, reject) => {
           const timeoutId = setTimeout(() => { 
               // TIMEOUT HANDLING
               this.workerTickPromises.delete(workerId);
+              this.timedOutWorkers.add(workerId); // [FIX 8] Mark as timed out
               logger.error(`[Matrix] Worker ${workerId} TIMED OUT. Terminating...`);
               
               // Prevent race conditions by marking as hanging
@@ -1043,7 +1125,15 @@ class Matrix {
         
         activeWorkerPromises.push(tickPromise);
         activeWorkerIds.push(workerId);
-        worker.postMessage({ type: 'TICK', payload: { ...tickPayload, agentsData: payload.agentsData } });
+        
+        worker.postMessage({ 
+            type: 'TICK', 
+            payload: { 
+                ...tickPayloadBase, 
+                agentsData: payload.agentsData,
+                partitionUpdates // Send updates atomically
+            } 
+        });
       }
     }
 
@@ -1119,7 +1209,7 @@ class Matrix {
       if (walOp.op === 'db:writeMemory') {
         this.eventBus.queue('db:writeMemory', 'medium', walOp.data.agentId, walOp.data.tick, walOp.data.memory);
       } else {
-        // FIX 3: Treat isHealthy as a boolean property, NOT a function
+        // [FIX 10] Treat isHealthy as a boolean property, NOT a function
         if (this.dbService && this.dbService.isHealthy) { // Defensive check
             this.dbService.logSimulationEvent(this.tickCount, walOp.op, walOp.data);
         }

@@ -7,9 +7,10 @@ const SLEEP_CONFIG = {
     BASE_REGEN: 5.0,
     DEEP_SLEEP_MULTIPLIER: 1.5,
     REM_THRESHOLD_TICKS: 10,
-    WAKE_THRESHOLD: 99.5,
+    WAKE_THRESHOLD: 99.5, // Force almost full energy before natural wake
     NOISE_WAKE_THRESHOLD: 0.85,
-    NIGHTMARE_STRESS_THRESHOLD: 60
+    NIGHTMARE_STRESS_THRESHOLD: 60,
+    WAKE_COOLDOWN_TICKS: 16 // ~4 hours minimum awake time (unless exhausted)
 };
 
 // === 1. LEAF NODES ===
@@ -80,15 +81,19 @@ const Actions = {
         return Status.SUCCESS;
     },
 
-    WakeUp: (agent, { reason }) => {
+    WakeUp: (agent, { reason, worldState }) => {
         if (agent.lod === 1) console.log(`[${agent.name}] Waking up: ${reason}`);
         
+        // Record wake time to prevent immediate re-sleeping
+        agent.lastWakeTick = worldState.currentTick;
+
         // Buffs/Debuffs
         if (!agent.status_effects) agent.status_effects = [];
         agent.status_effects = agent.status_effects.filter(e => e.type !== 'EXHAUSTED');
         
         if (reason === 'Fully Rested') {
-            agent.status_effects.push({ type: 'WELL_RESTED', duration: 240, magnitude: 0.8 });
+            // WELL_RESTED: 64 ticks (~16 hours) duration, 0.5 magnitude (halves energy decay)
+            agent.status_effects.push({ type: 'WELL_RESTED', duration: 64, magnitude: 0.5 });
         } else if (reason === 'Noise') {
             agent.status_effects.push({ type: 'GROGGY', duration: 60, magnitude: 1.2 });
         }
@@ -99,6 +104,26 @@ const Actions = {
 };
 
 const Conditions = {
+    // New check: Prevents "micro-sleeps" where agent enters state, ticks once, and leaves
+    ShouldSleep: (agent, { hour, worldState }) => {
+        // If exhausted (<10), always sleep
+        if ((agent.energy ?? 0) < 10) return true;
+        
+        // If already sleeping (initialized), stay asleep until wake condition
+        if (agent.stateContext.sleepDepthTicks !== undefined) return true;
+
+        // Check cooldown (Are we awake?)
+        const lastWake = agent.lastWakeTick || -999;
+        const ticksSinceWake = worldState.currentTick - lastWake;
+        
+        // Prevent going back to sleep too soon unless it's proper night time
+        if (ticksSinceWake < SLEEP_CONFIG.WAKE_COOLDOWN_TICKS) {
+             const isNight = (hour >= 23 || hour < 5);
+             if (!isNight) return false;
+        }
+        return true;
+    },
+
     IsAlarmRinging: (agent, { hour }) => {
         if (!agent.job || !agent.job.startHour) return false;
         // Wake up 1 hour before work
@@ -120,27 +145,37 @@ const Conditions = {
 // === 2. BEHAVIOR TREE ===
 
 const SleepingTree = new Sequence([
+    // Step 0: Pre-check (Bail if we shouldn't be here)
+    new Selector([
+        new Condition(Conditions.ShouldSleep),
+        new Action((agent) => {
+            // Bail out action
+            if (agent.intentionStack) agent.intentionStack.pop();
+            return { isDirty: true, nextState: 'fsm_idle' };
+        })
+    ]),
+
     new Action(Actions.InitializeSleep),
     
     new Selector([
         // PRIORITY 1: FORCED WAKE
         new Sequence([
             new Condition(Conditions.IsAlarmRinging),
-            new Action((a) => Actions.WakeUp(a, { reason: 'Work Alarm' }))
+            new Action((a, ctx) => Actions.WakeUp(a, { reason: 'Work Alarm', worldState: ctx.worldState }))
         ]),
         new Sequence([
             new Condition(Conditions.IsLoudNoise),
-            new Action((a) => Actions.WakeUp(a, { reason: 'Noise' }))
+            new Action((a, ctx) => Actions.WakeUp(a, { reason: 'Noise', worldState: ctx.worldState }))
         ]),
         new Sequence([
             new Condition(Conditions.IsStarving),
-            new Action((a) => Actions.WakeUp(a, { reason: 'Hunger' }))
+            new Action((a, ctx) => Actions.WakeUp(a, { reason: 'Hunger', worldState: ctx.worldState }))
         ]),
 
         // PRIORITY 2: NATURAL WAKE
         new Sequence([
             new Condition(Conditions.IsFullyRested),
-            new Action((a) => Actions.WakeUp(a, { reason: 'Fully Rested' }))
+            new Action((a, ctx) => Actions.WakeUp(a, { reason: 'Fully Rested', worldState: ctx.worldState }))
         ]),
 
         // PRIORITY 3: SLEEP

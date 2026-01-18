@@ -185,7 +185,10 @@ class CacheManager {
       if (availableHomes.length > 0) {
         const homeNode = availableHomes[Math.floor(Math.random() * availableHomes.length)];
         agent.homeLocationId = homeNode.key;
-        agent.homeNode = homeNode;
+        // [FIX] REMOVED agent.homeNode = homeNode;
+        // Storing the object reference caused stale data issues when worldGraph mutated.
+        // We now rely solely on homeLocationId as the single source of truth.
+        
         agent.locationId = homeNode.key; // Start at home
         agent.rent_cost = homeNode.rent_cost || 1200;
         
@@ -286,15 +289,16 @@ class CacheManager {
 
               // 2. Sync Complex Objects (Arrays/Maps)
               // We now receive these as raw objects via IPC, no parsing needed.
-              if (data.inventory) agent.inventory = data.inventory;
-              if (data.status_effects) agent.status_effects = data.status_effects;
-              if (data.recentActivities) agent.recentActivities = data.recentActivities;
-              if (data.relationships) agent.relationships = data.relationships;
-              if (data.history) agent.history = data.history;
-              if (data.intentionStack) agent.intentionStack = data.intentionStack;
+              // FIX: Sync empty arrays/nulls if explicitly sent (handles cleared inventory/state)
+              if (data.inventory !== undefined) agent.inventory = data.inventory;
+              if (data.status_effects !== undefined) agent.status_effects = data.status_effects;
+              if (data.recentActivities !== undefined) agent.recentActivities = data.recentActivities;
+              if (data.relationships !== undefined) agent.relationships = data.relationships;
+              if (data.history !== undefined) agent.history = data.history;
+              if (data.intentionStack !== undefined) agent.intentionStack = data.intentionStack;
               
               // FIX: Sync Job Data to prevent "Unemployed" drift in UI
-              if (data.job) agent.job = data.job;
+              if (data.job !== undefined) agent.job = data.job;
               
               this.dirtyAgents.add(agent.id);
           }
