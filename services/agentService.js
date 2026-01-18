@@ -2,7 +2,7 @@ import {
   shouldLogThinking,
 } from '../data/config.js';
 
-import { getAgentGoal } from '../engine/actionScorer.js';
+import { runPerception } from './perceptionService.js';
 
 /**
  * services/agentService.js
@@ -32,7 +32,8 @@ export async function updateAgent(agent, matrix, hour) {
           // Access events from worldState
           world_events: matrix.worldState?.world_events || [],
           dayOfWeek: matrix.worldTime ? matrix.worldTime.getDay() : 0,
-          environment: matrix.worldState?.environment 
+          environment: matrix.worldState?.environment,
+          weather: matrix.worldState?.weather || { weather: 'Clear' } 
       };
       
       // Cache it on the matrix instance so subsequent agents in this tick reuse it
@@ -47,31 +48,17 @@ export async function updateAgent(agent, matrix, hour) {
   // 1. Decay Needs (Hunger, Energy, etc.)
   // CRITICAL FIX: Removed double-decay. 
   // BaseState.tick() -> agent._decayStats() is already called within fsm.tick().
-  // calling it here caused 2x metabolism speed, leading to the death spiral.
-  /* if (typeof agent._decayStats === 'function') {
-      agent._decayStats(worldState);
-  }
-  */
-
+  
   // 2. Sensory Processing
-  if (typeof agent._processSenses === 'function') {
-      agent._processSenses(worldState);
-  }
+  // [REF] Wired in perceptionService to update agent beliefs (weather, crowding, nearby agents)
+  runPerception(agent, worldState, matrix.locationAgentCount || {});
 
   // 3. Status Effects (Buffs/Debuffs)
   // MOVED: To ensure multipliers apply to the current tick's decay, we update effects 
   // AFTER decay happens (in Transit block or after FSM tick).
-  /* if (typeof agent._updateStatusEffects === 'function') {
-      agent._updateStatusEffects();
-  }
-  */
 
   // 4. Memory Consolidation (Periodic)
-  // MOVED: To end of Phase 2. We now only record history on "natural breakpoints"
-  // (completion of activities) to avoid noisy data from mid-activity snapshots.
-  /* if (matrix.tickCount % 100 === 0 && typeof agent.updateHistory === 'function') {
-      agent.updateHistory();
-  } */
+  // MOVED: To end of Phase 2.
 
   // 5. Movement Physics
   if (agent.inTransit || agent.travelTimer > 0) {
@@ -81,13 +68,11 @@ export async function updateAgent(agent, matrix, hour) {
       
       // FIX: Apply decay during transit. 
       // Since we skip FSM (where decay lives now), we must manually apply it here to prevent metabolic pausing.
-      // This ensures 1x decay rate (consistent with the new 0.3 base in agent.js).
       if (typeof agent._decayStats === 'function') {
           agent._decayStats(worldState);
       }
 
       // FIX: Update status effects AFTER decay so multipliers apply for this tick.
-      // If we did this before decay, a 1-tick remaining effect would expire before applying its modifier.
       if (typeof agent._updateStatusEffects === 'function') {
           agent._updateStatusEffects();
       }
@@ -110,8 +95,6 @@ export async function updateAgent(agent, matrix, hour) {
   };
 
   // FIX: Populate complete environment data for States (Sleeping, etc)
-  // Previous version was missing temperature, light, and crowding, causing states
-  // to fallback to defaults (always 20C, always empty) and ignore environmental stressors.
   const localEnv = {
       noise: locationNode?.noise ?? 0.3,
       condition: locationNode?.condition ?? 100,
@@ -145,45 +128,9 @@ export async function updateAgent(agent, matrix, hour) {
   let isDirty = fsmResult.isDirty;
   let walOp = fsmResult.walOp || null;
 
-  // 7. CONSULT SCORER
-  // FIX: Only run scorer if the agent is currently IDLE.
-  // This enforces "State Commitment". If the agent is Sleeping, Working, or Eating,
-  // we do NOT let the scorer override that decision until the FSM transitions them back to 'fsm_idle'.
-  // This prevents agents from waking up at 80% energy just because a job score ticked up slightly.
-  if (agent.state === 'fsm_idle') {
-      try {
-        const decision = getAgentGoal(agent, hour, matrix.locationAgentCount || {}, localEnv, null, worldState);
-        
-        if (decision && decision.goal) {
-          if (agent.state !== decision.goal) {
-            
-            const transitionResult = agent.transitionToState(decision.goal);
-            
-            if (transitionResult.changed) {
-                isDirty = true;
-                if (transitionResult.walOp) walOp = transitionResult.walOp;
-
-                // --- RICH LOGGING ---
-                // FIX: Ensure critical events (Collapse/Break) are logged for ALL agents, not just LOD 1.
-                // This is essential for diagnosing "Doom Loops" where background agents die silently.
-                if (decision.reason === 'COLLAPSE' || decision.reason === 'MENTAL_BREAK') {
-                    matrix.eventBus.queue('log:agent', 'high', `[${agent.name}] ${decision.detailedReason}`);
-                    matrix.eventBus.queue('db:writeMemory', 'high', agent.id, matrix.tickCount, `Event: ${decision.detailedReason}`);
-                } 
-                else if (agent.lod === 1 && decision.detailedReason) {
-                    const level = (decision.score > 1000) ? 'high' : 'low';
-                    matrix.eventBus.queue('log:agent', level, `[${agent.name}] ${decision.detailedReason}`);
-                }
-            }
-          }
-        }
-      } catch (err) {
-        console.error(`[agentService] Scorer failed for ${agent.id}:`, err);
-        // FIX: Force safe fallback to prevent stuck states if scorer crashes
-        agent.transitionToState('fsm_idle');
-        return { isDirty: true, walOp: null };
-      }
-  }
+  // 7. CONSULT SCORER - REMOVED
+  // The 'actionScorer' logic has been replaced by the IdleState Behavior Tree.
+  // The FSM tick above (fsmResult) now handles all state transitions autonomously.
 
   // 8. IDLE THOUGHTS
   if (agent.lod === 1 && !isDirty && shouldLogThinking(agent, 'need')) {
