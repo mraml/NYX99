@@ -5,7 +5,8 @@ import * as agentService from '../services/agentService.js';
 import { FiniteStateMachine } from '../engine/fsm.js'; 
 import Agent from '../engine/agent.js'; 
 import * as socialService from '../services/socialService.js';
-import * as perceptionService from '../services/perceptionService.js'; 
+// [REF] Removed perceptionService import as it is now handled inside agentService
+// import * as perceptionService from '../services/perceptionService.js'; 
 
 // --- Worker-Local State ---
 let isInitialized = false;
@@ -129,13 +130,8 @@ async function processTick(tickPayload) {
 
     workerMatrixMock.cacheManager.getAllAgents = () => agents;
 
-    for (const agent of agents) {
-        perceptionService.runPerception(
-            agent,
-            workerMatrixMock.worldState,
-            workerMatrixMock.locationAgentCount
-        );
-    }
+    // [REF] Removed redundant perception loop.
+    // perceptionService.runPerception is now called inside agentService.updateAgent
 
     const walOps = [];
     
