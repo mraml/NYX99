@@ -135,7 +135,27 @@ class Matrix {
     }
 
     return new Promise((resolve, reject) => {
-      const worker = new Worker(path.join(__dirname, 'workers/agent.worker.js'));
+      // [FIX] Pipe worker output to prevent overwriting Dashboard TUI
+      // If headless, we can inherit (default) or pipe, but piping gives us log control.
+      const workerOptions = {
+          stdout: !isHeadless, // Pipe stdout if TUI is active
+          stderr: !isHeadless  // Pipe stderr if TUI is active
+      };
+
+      const worker = new Worker(path.join(__dirname, 'workers/agent.worker.js'), workerOptions);
+      
+      // [FIX] Redirect Worker logs to Main Thread Logger (which Dashboard hooks)
+      if (!isHeadless) {
+          worker.stdout.on('data', (chunk) => {
+              const msg = chunk.toString().trim();
+              if (msg) logger.info(`[Worker ${workerId}] ${msg}`);
+          });
+          worker.stderr.on('data', (chunk) => {
+              const msg = chunk.toString().trim();
+              if (msg) logger.error(`[Worker ${workerId}] ${msg}`);
+          });
+      }
+
       worker.on('message', (msg) => this._handleWorkerMessage(workerId, msg, resolve, reject));
       worker.on('error', (err) => this._handleWorkerError(workerId, err));
       
