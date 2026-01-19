@@ -1,8 +1,6 @@
 import worldGraph from '../data/worldGraph.js';
 import { 
   MINUTES_PER_TICK,
-  // REMOVED: FINANCIAL_ANXIETY_DURATION, EVICTION_FAILURE_COUNT, BASE_DEGRADATION_RATE, AGENT_DEGRADATION_MODIFIER
-  // These are now in GAME_BALANCE.WORLD
 } from '../data/config.js';
 import { dataLoader } from '../data/dataLoader.js';
 import { GAME_BALANCE } from '../data/balance.js'; 
@@ -12,7 +10,7 @@ import { GAME_BALANCE } from '../data/balance.js';
  *
  * Handles all "idle game" logic for the persistent world,
  * including business economies, rent, and degradation.
- * (REFACTORED v9.24: Fixed imports to use GAME_BALANCE fully.)
+ * (REFACTORED: Now sourcing strictly from events.yaml, weather_patterns.yaml, locations.yaml)
  */
 
 const CONSOLIDATION_AGE_TICKS = 192; 
@@ -22,15 +20,21 @@ const NEWS_UPDATE_INTERVAL_TICKS = 60;
 let _weatherWeightSum = 0;
 
 export function initWorldService() {
-  if (dataLoader.worldData && dataLoader.worldData.weather_patterns) {
-    _weatherWeightSum = Object.values(dataLoader.worldData.weather_patterns).reduce((sum, w) => sum + (w.weight || 0), 0);
+  // Source: weather_patterns.yaml
+  const weatherSource = dataLoader.weatherPatterns || dataLoader.worldData?.weather_patterns;
+
+  if (weatherSource) {
+    // If the yaml is structured as { weather_patterns: { ... } } or just { Clear: ... }
+    // Based on file: weather_patterns.yaml has root key 'weather_patterns'
+    const patterns = weatherSource.weather_patterns || weatherSource;
+
+    _weatherWeightSum = Object.values(patterns).reduce((sum, w) => sum + (w.weight || 0), 0);
     
-    const weatherPatterns = dataLoader.worldData.weather_patterns || {};
     if (_weatherWeightSum > 0) {
         const rand = Math.random() * _weatherWeightSum;
         let cumulativeWeight = 0;
-        for (const key in weatherPatterns) {
-            const weather = weatherPatterns[key];
+        for (const key in patterns) {
+            const weather = patterns[key];
             cumulativeWeight += weather.weight;
             if (rand <= cumulativeWeight) {
                 break;
@@ -241,25 +245,36 @@ export function updateWorldDegradation(worldNodes, locationAgentCount) {
 export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
     const hour = worldTime.getHours();
     
-    const timeData = dataLoader.worldData.time_of_day_data || {};
-    const todKey = Object.keys(timeData).reverse().find(k => hour >= k) || '12'; 
-    const tod = timeData[todKey] || { key: 'afternoon', descriptions: ['...'], light: 1.0, temp: 2 };
+    // --- Time of Day (Source: weather_patterns.yaml) ---
+    const weatherData = dataLoader.weatherPatterns || dataLoader.worldData || {};
+    const atmosphereData = weatherData.time_of_day_atmosphere || {};
     
-    worldState.timeOfDay = tod.key;
+    let todKey = 'night';
+    if (hour >= 5 && hour < 8) todKey = 'early_morning';
+    else if (hour >= 8 && hour < 12) todKey = 'morning';
+    else if (hour >= 12 && hour < 17) todKey = 'afternoon';
+    else if (hour >= 17 && hour < 21) todKey = 'evening';
+    else if (hour >= 21 || hour < 0) todKey = 'night';
+    else if (hour >= 0 && hour < 3) todKey = 'late_night';
+    else if (hour >= 3 && hour < 5) todKey = 'very_late';
+
+    worldState.timeOfDay = todKey;
+    const tod = atmosphereData[todKey] || { description: '...' };
+    worldState.timeOfDayDesc = tod.description;
     
-    if (Array.isArray(tod.descriptions) && tod.descriptions.length > 0) {
-        worldState.timeOfDayDesc = tod.descriptions[Math.floor(Math.random() * tod.descriptions.length)];
-    } else {
-        worldState.timeOfDayDesc = tod.descriptions || tod.desc || '...'; 
-    }
-    
+    // --- Weather Update ---
     if (tickCount === 1 || tickCount % (60 * 24 / MINUTES_PER_TICK) === 0) { 
-        const weatherPatterns = dataLoader.worldData.weather_patterns || {};
-        if (_weatherWeightSum > 0) {
-            const rand = Math.random() * _weatherWeightSum;
+        // Use weather_patterns.yaml
+        const patterns = weatherData.weather_patterns || {};
+        
+        let weightSum = 0;
+        for(let k in patterns) weightSum += (patterns[k].weight || 0);
+
+        if (weightSum > 0) {
+            const rand = Math.random() * weightSum;
             let cumulativeWeight = 0;
-            for (const key in weatherPatterns) {
-                const weather = weatherPatterns[key];
+            for (const key in patterns) {
+                const weather = patterns[key];
                 cumulativeWeight += weather.weight;
                 if (rand <= cumulativeWeight) {
                     if (worldState.weather.weather !== key) {
@@ -272,21 +287,22 @@ export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
         }
     }
 
+    // Apply weather effects
     const baseTemp = 18; 
     const baseLight = 0.0; 
-    worldState.environment.globalTemp = baseTemp + (worldState.weather.temp || 0) + tod.temp;
-    worldState.environment.globalLight = Math.max(0, Math.min(1, baseLight + tod.light + (worldState.weather.light || 0)));
+    // Defaults for TOD light/temp if not in yaml
+    const todTemp = (todKey === 'afternoon') ? 2 : (todKey === 'night' || todKey === 'late_night') ? -2 : 0;
+    const todLight = (todKey === 'morning' || todKey === 'afternoon') ? 1.0 : (todKey === 'evening') ? 0.5 : 0.1;
+
+    worldState.environment.globalTemp = baseTemp + (worldState.weather.temp || 0) + todTemp;
+    worldState.environment.globalLight = Math.max(0, Math.min(1, baseLight + todLight + (worldState.weather.light || 0)));
 
     const weatherType = worldState.weather.weather || 'Clear';
-    if (weatherType === 'Heavy rain') {
-        worldState.timeOfDayDesc = 'The city is drenched in a downpour.';
-    } else if (weatherType === 'Snow') {
-        worldState.timeOfDayDesc = 'A blanket of snow quietly covers the streets.';
-    } else if (weatherType === 'Hot and humid') {
-        worldState.timeOfDayDesc = 'The air is thick and heavy with oppressive humidity.';
-    }
-
-    const newsHeadlines = dataLoader.worldData.news_headlines || [];
+    
+    // --- News & Events Update (Source: events.yaml) ---
+    const eventsData = dataLoader.events || dataLoader.eventsData || {}; 
+    const newsHeadlines = eventsData.news_headlines || []; // Assuming events.yaml might have this, or fallback
+    
     if (tickCount - lastNewsUpdateTick > NEWS_UPDATE_INTERVAL_TICKS) {
         let newHeadline = null;
         const contextualHeadlines = [];
@@ -298,13 +314,6 @@ export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
             contextualHeadlines.push("City issues heat advisory as temperatures soar for third straight day.");
         }
         
-        if (weatherType === 'Snow' && !worldState.news.includes('Snow')) {
-            contextualHeadlines.push("First major snowfall of the season expected, city deploys salt trucks.");
-        }
-        if (weatherType === 'Heavy rain' && !worldState.news.includes('Flooding')) {
-            contextualHeadlines.push("Flash flood warnings issued for low-lying areas in Brooklyn and Queens.");
-        }
-
         if (contextualHeadlines.length > 0) {
             newHeadline = contextualHeadlines[Math.floor(Math.random() * contextualHeadlines.length)];
         }
@@ -313,44 +322,40 @@ export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
             newHeadline = newsHeadlines[Math.floor(Math.random() * newsHeadlines.length)];
         }
         
-        if (worldState.news !== newHeadline) {
+        // If no events.yaml headlines, keep existing or fallback
+        if (worldState.news !== newHeadline && newHeadline) {
             worldState.news = newHeadline;
             lastNewsUpdateTick = tickCount;
             eventBus.queue('log:world', 'low', `[News] Headline updated: ${newHeadline}`);
         }
     }
 
+    // --- Clean up Expired Events ---
     worldState.activeEvents = (worldState.activeEvents || []).filter(event => {
         event.ticksRemaining--;
         return event.ticksRemaining > 0;
     });
     
-    const randomSubwayEvents = dataLoader.worldData?.random_subway_events || [];
-    if (Math.random() < 1 / 75 && (worldState.activeEvents || []).length < 3 && randomSubwayEvents.length > 0) {
-        const eventTemplate = randomSubwayEvents[Math.floor(Math.random() * randomSubwayEvents.length)];
-        const newEvent = { name: eventTemplate.event, ticksRemaining: Math.floor(Math.random() * 50) + 50 };
-        worldState.activeEvents.push(newEvent);
-        eventBus.queue('log:world', 'low', `${newEvent.name}`);
-    }
-
-    if (worldState.sensoryEvent) {
-        worldState.sensoryEvent.ticksRemaining--;
-        if (worldState.sensoryEvent.ticksRemaining <= 0) {
-            worldState.sensoryEvent = null;
-        }
-    }
-
     worldState.world_events = (worldState.world_events || []).filter(event => {
         event.duration--;
         return event.duration > 0;
     });
 
+    // --- Trigger Random Events (Source: events.yaml) ---
+    // Check every 200 ticks (~2 days)
     if (tickCount % 200 === 0) {
+        // 1. Subway Delay 
         if (Math.random() < 0.1 && !worldState.world_events.some(e => e.type === 'SUBWAY_DELAY')) {
+            // Source text from events.yaml if possible
+            const subEvents = eventsData.random_subway_events || [];
+            const flavor = subEvents.length > 0 ? subEvents[Math.floor(Math.random() * subEvents.length)].event : "Signal Failure";
+            
             const duration = Math.floor(Math.random() * 20) + 10;
-            worldState.world_events.push({ type: 'SUBWAY_DELAY', duration: duration });
-            eventBus.queue('log:world', 'medium', `A SUBWAY_DELAY is affecting commutes for ${duration} ticks.`);
+            worldState.world_events.push({ type: 'SUBWAY_DELAY', duration: duration, description: flavor });
+            eventBus.queue('log:world', 'medium', `SUBWAY DELAY: ${flavor} (${duration} ticks).`);
         }
+        
+        // 2. Heat Wave
         if (Math.random() < 0.05 && !worldState.world_events.some(e => e.type === 'HEAT_WAVE')) {
             const duration = Math.floor(Math.random() * 50) + 50;
             worldState.world_events.push({ type: 'HEAT_WAVE', duration: duration });
@@ -370,6 +375,11 @@ export function runSensoryCheck(tickCount, worldState, playerFocus, eventBus) {
     const crowdProfile = worldGraph.getExpectedCrowdProfile(focusedNode);
     let sensoryData = null, prefix = '';
 
+    // Source: locations.yaml
+    const locationsData = dataLoader.locations || {};
+    const nycSounds = locationsData.nyc_sounds || {};
+    const nycSmells = locationsData.nyc_smells || {};
+
     if (focusedNode.isOutdoors) {
         if (weather.weather === 'Heavy rain') {
             sensoryData = 'the roar of rain hitting the pavement.';
@@ -384,28 +394,14 @@ export function runSensoryCheck(tickCount, worldState, playerFocus, eventBus) {
     }
 
     if (!sensoryData && crowdProfile.density > 0.7) {
+        // High density override
         if (focusedNode.type === 'bar' || focusedNode.type === 'venue') {
-            sensoryData = 'the din of a packed crowd and loud music.';
-            prefix = 'You hear';
-        } else if (focusedNode.type === 'restaurant' || focusedNode.type === 'park') {
-            sensoryData = 'the murmur of many conversations.';
+            sensoryData = 'the din of a packed crowd.';
             prefix = 'You hear';
         }
     }
 
-    if (!sensoryData && hour >= 2 && hour < 5 && focusedNode.isOutdoors) {
-        const nightSounds = [
-            'a distant siren wailing.',
-            'the rumble of an idling truck.',
-            'a far-off shout, quickly silenced.'
-        ];
-        sensoryData = nightSounds[Math.floor(Math.random() * nightSounds.length)];
-        prefix = 'In the quiet, you hear';
-    }
-    
     if (!sensoryData) {
-        const nycSounds = dataLoader.worldData?.nyc_sounds || {};
-        const nycSmells = dataLoader.worldData?.nyc_smells || {};
         const locationType = focusedNode.type;
 
         if (Math.random() < 0.5) {

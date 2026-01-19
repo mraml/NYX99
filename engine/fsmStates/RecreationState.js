@@ -12,7 +12,7 @@ const Actions = {
         if (agent.stateContext.ticksInState !== undefined) return Status.SUCCESS;
         
         // Params passed from FSM transition or Intent
-        agent.stateContext.duration = agent.stateContext.duration || 60; // Default 1 hour
+        agent.stateContext.duration = agent.stateContext.duration || 60; // Default 1 hour target
         agent.stateContext.ticksInState = 0;
         
         if (agent.lod === 1) console.log(`[${agent.name}] Starting fun: ${agent.currentActivityName}`);
@@ -63,12 +63,23 @@ const Conditions = {
     
     IsFinished: (agent) => {
         const duration = agent.stateContext.duration;
-        if (duration && agent.stateContext.ticksInState >= duration) return true;
+        const ticks = agent.stateContext.ticksInState || 0;
         
-        // Natural saturation
-        if ((agent.boredom ?? 0) <= 5 && (agent.stress ?? 0) <= 10) return true;
+        // 1. Minimum Commitment (e.g. 4 ticks = 1 hour)
+        // Unless critical needs (handled by FSM interrupts), stay for a bit.
+        if (ticks < 4) return false;
+
+        // 2. Planned Duration End
+        if (duration && ticks >= duration) return true;
         
-        // Exhaustion check
+        // 3. Natural Saturation (Fixed: Relaxed thresholds)
+        // Was: boredom <= 5 && stress <= 10. 
+        // Now: boredom <= 0 OR stress <= 0 (if that was the goal).
+        // Actually, we want to stop if BOTH are low enough, but not *instantly*.
+        // Let's say: Stop if Boredom is completely gone AND Stress is low.
+        if ((agent.boredom ?? 0) <= 0 && (agent.stress ?? 0) <= 5) return true;
+        
+        // 4. Exhaustion check
         if ((agent.energy ?? 0) < 10) return true;
         
         return false;

@@ -1,6 +1,13 @@
 # ============================================================================
 # SOCIAL DATA (Topics, Gossip) & SLANG
+# ----------------------------------------------------------------------------
+# Source of Truth for:
+# 1. Conversation Topics
+# 2. Gossip Templates
+# 3. Slang
+# 4. News Headlines (Flavor text for the world)
 # ============================================================================
+
 conversation_topics:
   # 1999 Current Events
   - { topic: 'Y2K', interest_tags: ['technology', 'politics'], relevance: 'very_high' }
@@ -57,6 +64,56 @@ conversation_topics:
   - { topic: 'Fight Club ending', interest_tags: ['movies'], relevance: 'high' }
   - { topic: "Woodstock '99 riots", interest_tags: ['music', 'news'], relevance: 'medium' }
 
+# ============================================================================
+# NEWS HEADLINES
+# ============================================================================
+news_headlines:
+  # --- Y2K & Tech ---
+  - "Y2K fears grow as '99 nears end."
+  - "Experts warn of Y2K 'digital apocalypse' as clocks tick down."
+  - "Families stockpiling water, canned goods for Jan 1st."
+  - "What is Linux? Free OS gains traction among techies."
+  - "New 'Blogger' website lets anyone publish online."
+  - "Scientists debate ethics of animal cloning after 'Dolly' success."
+  - "New 'Bluetooth' wireless tech promises to cut cords."
+  - "Intel releases new Pentium III processor."
+  
+  # --- Business & Economy ---
+  - "Dot-com bubble? Stocks continue to soar to record highs."
+  - "Dow Jones breaks 11,000 for the first time."
+  - "Amazon.com stock soars, company still reports no profits."
+  - "Pets.com sock puppet becomes national icon."
+  - "Gas prices shockingly high at $1.25/gallon."
+  - "Economy booming, unemployment at record 30-year low."
+
+  # --- Culture & Entertainment ---
+  - "New 'Matrix' movie wows audiences with groundbreaking effects."
+  - "Is 'The Matrix' a documentary? Fans debate online."
+  - "Viewers hooked on new game show 'Who Wants to Be a Millionaire'."
+  - "Ricky Martin brings 'Livin' la Vida Loca' to masses."
+  - "'Blair Witch Project' scares up box office records."
+  - "Pokemon cards: Collectible or just a fad?"
+  - "Star Wars: Phantom Menace breaks box office records amid fan debate."
+  - "Napster launches, music industry in chaos."
+  - "Massive crowds line up for new 'Furby' toy."
+
+  # --- World & Politics ---
+  - "President Clinton's impeachment trial concludes."
+  - "NATO intervention in Kosovo continues."
+  - "Vladimir Putin named acting president of Russia after Yeltsin resigns."
+  - "Protests expected at upcoming WTO meeting in Seattle."
+  - "Global population officially reaches 6 billion."
+
+  # --- Local NYC ---
+  - "Mayor Giuliani's 'quality of life' policing debated by citizens."
+  - "Rents in SoHo and TriBeCa reach record highs."
+  - "Yankees celebrate another World Series win, parade planned."
+  - "Construction on new 'Rose Center for Earth and Space' continues."
+  - "MTA announces plans to phase out subway tokens for new 'MetroCard'."
+
+# ============================================================================
+# GOSSIP & SLANG
+# ============================================================================
 gossip_templates:
   - "Did you hear that {SUBJECT_NAME} {GOSSIP_VERB}?"
   - "I heard {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}!"
@@ -108,9 +165,6 @@ gossip_adjectives:
   - "doing really well these days"
   - "spiraling out of control"
 
-# ============================================================================
-# SLANG & SPEECH PATTERNS (1999)
-# ============================================================================
 common_slang_1999:
   - 'all that and a bag of chips'
   - 'as if!'

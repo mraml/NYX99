@@ -9,36 +9,41 @@ const Conditions = {
     
     IsBurnedOut: (agent) => (agent.stress > 90),
     
-    IsJobHunting: (agent) => agent.stateContext.isSeekingEmployment,
-    
-    IsJobSearchFailed: (agent) => 
-        (agent.stateContext.jobHuntDuration >= agent.stateContext.MAX_JOB_HUNT_TICKS) || 
-        (agent.energy < 20),
-    
     IsDistracted: (agent, { localEnv }) => 
         (localEnv.noise > 0.7 || (agent.perceivedAgents?.length > 3 && agent.persona.extroversion < 0.3))
 };
 
 const Actions = {
+    PayWages: (agent, context) => {
+        // Calculate earnings: Hourly wage * Hours worked
+        // Default to minimum wage if undefined
+        const hourlyWage = (agent.job?.salary || 20000) / 2000; // Salary / ~2000 work hours/year
+        const ticksWorked = agent.stateContext.ticksWorked || 0;
+        const hoursWorked = ticksWorked / 4; // 15 min ticks
+        
+        if (hoursWorked > 0) {
+            const earnings = hourlyWage * hoursWorked;
+            agent.money = (agent.money || 0) + earnings;
+            
+            // Optional: Log payment
+            if (agent.lod === 1) {
+                console.log(`[${agent.name}] Earned $${earnings.toFixed(2)} for ${hoursWorked.toFixed(1)} hours of work.`);
+            }
+            
+            return { isDirty: true, walOp: { op: 'AGENT_EARN_WAGE', data: { amount: earnings } } };
+        }
+        return Status.SUCCESS;
+    },
+
     LeaveWork: (agent) => {
         if (agent.intentionStack) agent.intentionStack.pop();
         // Return transition data. The Tree engine will bubble this up via context.transition
         return { isDirty: true, nextState: 'fsm_idle' }; 
     },
 
-    PerformJobSearch: (agent) => {
-        agent.stateContext.jobHuntDuration = (agent.stateContext.jobHuntDuration || 0) + 1;
-        agent.stress = Math.min(100, (agent.stress || 0) + 0.2);
-        
-        // Log occasionally
-        if (Math.random() < 0.1) {
-             return { isDirty: true, walOp: { op: 'AGENT_JOB_HUNT', data: { progress: agent.stateContext.jobHuntDuration } } };
-        }
-        return Status.RUNNING; // Stays in this state
-    },
-
     DoActualWork: (agent) => {
         // Standard work logic
+        agent.stateContext.ticksWorked = (agent.stateContext.ticksWorked || 0) + 1;
         agent.stress = Math.min(100, (agent.stress || 0) + 0.05);
         
         // Chance for bonus
@@ -50,14 +55,18 @@ const Actions = {
     },
 
     SlackOff: (agent) => {
-        agent.mood = Math.min(100, (agent.mood || 0) + 1);
-        agent.stress = Math.max(0, (agent.stress || 0) - 0.1);
+        // [FIX] Removed state transition. Slacking off now happens AT WORK.
+        // It relieves stress but doesn't earn "ticksWorked" (or earns less).
         
-        if (Math.random() < 0.1) {
-            // Transition out for recreation
-            return { isDirty: true, nextState: 'fsm_recreation' };
+        agent.mood = Math.min(100, (agent.mood || 0) + 1);
+        agent.stress = Math.max(0, (agent.stress || 0) - 0.5);
+        
+        // Flavor log occasionally
+        if (agent.lod === 1 && Math.random() < 0.05) {
+             console.log(`[${agent.name}] Zoning out at work.`);
         }
-        return { isDirty: true };
+        
+        return Status.SUCCESS;
     }
 };
 
@@ -68,11 +77,13 @@ const StandardWorkerTree = new Selector([
     // 1. High Priority: Burnout
     new Sequence([
         new Condition(Conditions.IsBurnedOut),
+        new Action(Actions.PayWages), // Get paid for partial shift
         new Action(Actions.LeaveWork)
     ]),
     // 2. High Priority: Shift End
     new Sequence([
         new Condition(Conditions.IsShiftOver),
+        new Action(Actions.PayWages), // Get paid for full shift
         new Action(Actions.LeaveWork)
     ]),
     // 3. Distractions (Low Chance to slack off)
@@ -84,26 +95,30 @@ const StandardWorkerTree = new Selector([
     new Action(Actions.DoActualWork)
 ]);
 
-// Tree B: The Job Hunter
-const JobHunterTree = new Selector([
-    new Sequence([
-        new Condition(Conditions.IsJobSearchFailed),
-        new Action(Actions.LeaveWork)
-    ]),
-    new Action(Actions.PerformJobSearch)
-]);
-
 // === 3. THE REFACTORED STATE ===
 
 export class WorkingState extends BaseState {
     
     enter(agent) {
         super.enter(agent);
+        
+        // [FIX] Set Activity Name based on Job Type to source from activities.yaml
+        // This ensures flavor text like "typing at desk" appears instead of generic strings.
+        const title = (agent.job?.title || '').toLowerCase();
+        if (title.includes('officer') || title.includes('police')) {
+            agent.currentActivityName = 'patrolling (police)';
+        } else if (title.includes('teacher') || title.includes('professor')) {
+            agent.currentActivityName = 'teaching class (teacher)';
+        } else if (title.includes('bartender') || title.includes('waiter') || title.includes('server')) {
+            agent.currentActivityName = 'working (service)';
+        } else {
+            agent.currentActivityName = 'working (office)';
+        }
+        
         this._updateActivityFromState(agent);
         
         // Initialize context variables needed for the tree
-        agent.stateContext.jobHuntDuration = 0;
-        agent.stateContext.MAX_JOB_HUNT_TICKS = 60; // Configurable
+        agent.stateContext.ticksWorked = 0; // Track time for payment
     }
 
     tick(agent, hour, localEnv, worldState) {
@@ -119,12 +134,7 @@ export class WorkingState extends BaseState {
         };
 
         // 2. Select the correct static tree logic
-        let behaviorTree;
-        if (agent.stateContext.isSeekingEmployment) {
-            behaviorTree = JobHunterTree;
-        } else {
-            behaviorTree = StandardWorkerTree;
-        }
+        const behaviorTree = StandardWorkerTree;
 
         // 3. Execute the Tree
         const status = behaviorTree.execute(agent, context);
@@ -142,6 +152,6 @@ export class WorkingState extends BaseState {
              isDirty = true;
         }
         
-        return { isDirty, walOp: null };
+        return { isDirty, walOp: context.walOp || null };
     }
 }

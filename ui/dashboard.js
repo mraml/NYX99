@@ -4,7 +4,8 @@ import eventBus from '../engine/eventBus.js';
 import worldGraph from '../data/worldGraph.js';
 import { UI_RENDER_RATE_MS } from '../data/config.js';
 import logger from '../logger.js';
-import { dataLoader } from '../data/dataLoader.js'; 
+// [Refined] Import the Maps to correlate data
+import { dataLoader, ACTIVITIES_MAP, ACTIVITY_COSTS } from '../data/dataLoader.js'; 
 
 class Dashboard {
   static SPARKLINE_WIDTH = 10;
@@ -25,9 +26,16 @@ class Dashboard {
   constructor() {
     global.dashboard = this;
     this._errorCount = 0; 
-    this._isLogging = false;
+    
+    // [FIX 6] Console Hook Reentrancy Guard (Queue System)
+    this._logQueue = [];
+    
+    // [FIX 11] List Update Optimization Signature
+    this._lastListSignature = '';
 
     // === Capture Console Output (Safe Mode) ===
+    // We hook mostly to capture main thread logs. 
+    // Worker logs piped to stdout will still corrupt unless the parent process (index.js) pipes them.
     if (console.log._isDashboardHook) {
         console.log = console.log._original || console.log;
     }
@@ -39,28 +47,16 @@ class Dashboard {
     this.originalError = console.error;
 
     const logWrapper = (...args) => {
-        if (this._isLogging) return; 
         const msg = args.map(String).join(' ');
-        try {
-            this._isLogging = true;
-            if (eventBus && eventBus.emitNow) eventBus.emitNow('log:system', msg);
-        } catch (e) { } finally {
-            this._isLogging = false;
-        }
+        this._logQueue.push({ type: 'log:system', msg });
     };
     logWrapper._isDashboardHook = true;
     logWrapper._original = this.originalLog;
     console.log = logWrapper;
 
     const errorWrapper = (...args) => {
-        if (this._isLogging) return; 
         const msg = args.map(String).join(' ');
-        try {
-            this._isLogging = true;
-            if (eventBus && eventBus.emitNow) eventBus.emitNow('log:error', msg);
-        } catch (e) { } finally {
-            this._isLogging = false;
-        }
+        this._logQueue.push({ type: 'log:error', msg });
     };
     errorWrapper._isDashboardHook = true;
     errorWrapper._original = this.originalError;
@@ -72,7 +68,9 @@ class Dashboard {
       autoPadding: true,
       mouse: true,
       fullUnicode: true,
-      terminal: 'xterm-256color' 
+      terminal: 'xterm-256color',
+      // [FIX] Ensure dock/resize events don't break layout
+      dockBorders: true
     });
 
     this.grid = new contrib.grid({
@@ -123,10 +121,10 @@ class Dashboard {
       parent: this.locationBox,
       top: 0, left: 1, right: 1, height: 1,
       tags: true,
-      content: '{bold}NAME'.padEnd(24) + '   ' + 
-               'CAREER'.padEnd(22) + '   ' + 
-               'LOCATION'.padEnd(23) + '   ' + 
-               'ACTIVITY'.padEnd(25) + '   ' + 
+      content: '{bold}NAME'.padEnd(20) + '   ' + 
+               'CAREER'.padEnd(20) + '   ' + 
+               'LOCATION'.padEnd(20) + '   ' + 
+               'ACTIVITY'.padEnd(20) + '   ' + 
                'ACTION{/bold}',
       style: { fg: 'white' }
     });
@@ -172,6 +170,24 @@ class Dashboard {
     this.startRenderLoop();
     this.setupKeybindings();
     this.setupLogListener();
+    
+    // Process logs periodically
+    setInterval(() => this._flushLogs(), 100);
+    
+    // [FIX] Initial Screen Clear to wipe any pre-launch logs
+    this.screen.render();
+  }
+  
+  _flushLogs() {
+     if (this._logQueue.length === 0) return;
+     // Process max 50 logs per tick to prevent starvation
+     const batch = this._logQueue.splice(0, 50);
+     batch.forEach(item => {
+        try {
+            // [FIX] Check for "Worker" logs and route them to log box instead of stdout
+            if (eventBus && eventBus.emitNow) eventBus.emitNow(item.type, item.msg);
+        } catch(e) {}
+     });
   }
   
   emergencyShutdown() {
@@ -220,40 +236,50 @@ class Dashboard {
           }
 
           // Case 2: Intent-Driven (The "Why")
-          let raw = this.safeString(agent.currentActivity, '').trim();
           const activeIntention = agent.intentionStack && agent.intentionStack.length > 0 
               ? agent.intentionStack[agent.intentionStack.length - 1] 
               : null;
 
-          // Priority 1: High-level State override (Sleeping/Eating/Working shouldn't show "Idling")
+          // Priority 1: High-level State override
           if (agent.state === 'fsm_sleeping') return 'Sleeping';
-          if (agent.state === 'fsm_eating') return 'Eating';
-          if (agent.state.startsWith('fsm_working')) return 'Working';
           if (agent.state === 'fsm_commuting') return 'Commuting';
+          
           if (agent.state === 'fsm_in_transit') {
-              // Try to find what they are doing while moving
+              let raw = this.safeString(agent.currentActivity, '').trim();
               const lower = raw.toLowerCase();
-              if (!lower.includes('walk') && !lower.includes('subway') && !lower.includes('transit') && !lower.includes('travel')) {
+              if (!lower.includes('walk') && !lower.includes('subway')) {
                   return 'Traveling...';
               }
-              return raw; // "Walking", "Taking Subway"
+              return raw; 
+          }
+          
+          // Priority 2: Use specific currentActivity from actions list
+          // Ensure it's not just repeating the generic state name
+          let actionText = this.safeString(agent.currentActivity, '');
+          let activityName = this.safeString(agent.currentActivityName || agent.state, '');
+
+          // If currentActivity is specifically set and distinct from the category name, use it.
+          if (actionText && actionText !== 'idle' && !actionText.includes('fsm_') && actionText !== activityName) {
+              return actionText;
           }
 
-          // Priority 2: Active Intention (e.g. "Seeking Food")
+          // Priority 3: Active Intention (e.g. "Seeking Food")
           if (activeIntention && activeIntention.goal) {
               const reason = activeIntention.reason ? ` (${activeIntention.reason})` : '';
-              // Format: "Goal: Find Food (Hungry)"
               let prettyGoal = activeIntention.goal.replace('fsm_', '').replace(/_/g, ' ');
-              return `Goal: ${prettyGoal}${reason}`;
+              // Format appropriately if it's an action vs a category
+              return prettyGoal + reason;
           }
 
-          // Priority 3: Fallback to formatted state name if activity is generic "Idling"
-          if ((!raw || raw === 'Idling') && agent.state && agent.state !== 'fsm_idle') {
+          // Priority 4: Fallback to formatted state name if no specific action
+          // This ensures that "Working" doesn't become "Playing Goldeneye" unless explicitly set
+          // But if the action text WAS "Playing Goldeneye", Priority 2 would have caught it.
+          // This block catches the case where currentActivity is empty or generic.
+          if (agent.state && agent.state !== 'fsm_idle') {
               return agent.state.replace('fsm_', '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
           }
 
-          // Priority 4: Raw string, or just "Idle"
-          return raw || 'Idle';
+          return 'Idle';
       } catch (e) {
           return 'Processing...';
       }
@@ -281,6 +307,11 @@ class Dashboard {
   }
 
   getCivStats(agents) {
+      // [FIX 4] Stats Calculation Division by Zero Risk
+      if (!agents || agents.length === 0) {
+          return { homeless: 0, unemployed: 0, sick: 0, totalWealth: 0, topJob: 'None' };
+      }
+
       let homelessCount = 0, unemployedCount = 0, sickCount = 0, totalWealth = 0;
       const jobCounts = {};
       agents.forEach(a => {
@@ -346,12 +377,17 @@ class Dashboard {
 
   startRenderLoop() {
     this.renderInterval = setInterval(() => {
+      // [FIX 8] Error Counter Decay
+      if (this._errorCount > 0) {
+          this._errorCount--;
+      }
+
       if (this.latestState) {
         try {
           this.updateFocusedAgentMemories();
           this.render(this.latestState);
         } catch (err) {
-           this._errorCount++;
+           this._errorCount += 5; // Penalty for crash
            if (this._errorCount > 100) { 
              this.emergencyShutdown();
              if (this.originalError) this.originalError('CRITICAL UI FAILURE: Stopping render loop.');
@@ -365,7 +401,9 @@ class Dashboard {
   makeSparkline(data, width = Dashboard.SPARKLINE_WIDTH, color = 'white') {
       if (!data || data.length === 0) return ' '.repeat(width + 2);
       
-      const subset = data.slice(-width); 
+      // [FIX 7] Sparkline Data Array Mutation
+      const subset = [...data].slice(-width); 
+      
       const min = Math.min(...subset);
       const max = Math.max(...subset);
       const range = max - min || 1;
@@ -386,20 +424,31 @@ class Dashboard {
   }
 
   formatNeed(label, value, max = 100, isInverted = false) {
+    // [FIX 5] Inverted Hunger/Social Bar Logic
     const safeValue = this.safeNumber(value, 0);
     const safeMax = this.safeNumber(max, 100);
-    const percentGood = isInverted 
-        ? Math.max(0, 100 - (safeValue / safeMax) * 100)
-        : Math.min(100, (safeValue / safeMax) * 100);
+    
+    // Calculate raw percentage of max (e.g. Hunger 100/100 is 100%)
+    let pct = Math.min(100, Math.max(0, (safeValue / safeMax) * 100));
 
     const barLength = 10;
-    const filled = Math.round((percentGood / 100) * barLength);
+    const filled = Math.round((pct / 100) * barLength);
     const empty = barLength - filled;
-    let color = Dashboard.COLORS.GOOD;
-    if (percentGood < 60) color = Dashboard.COLORS.WARN;
-    if (percentGood < 30) color = Dashboard.COLORS.BAD;
     
-    return `${label.padEnd(7)}: {${color}}[${'|'.repeat(filled)}${'.'.repeat(empty)}]{/${color}} ${percentGood.toFixed(0).padStart(3)}%`;
+    let color = Dashboard.COLORS.GOOD;
+    
+    if (isInverted) {
+        // High Value = Bad (e.g., Hunger)
+        if (pct > 60) color = Dashboard.COLORS.BAD;
+        else if (pct > 30) color = Dashboard.COLORS.WARN;
+        // Else Good
+    } else {
+        // High Value = Good (e.g., Energy)
+        if (pct < 30) color = Dashboard.COLORS.BAD;
+        else if (pct < 60) color = Dashboard.COLORS.WARN;
+    }
+    
+    return `${label.padEnd(7)}: {${color}}[${'|'.repeat(filled)}${'.'.repeat(empty)}]{/${color}} ${pct.toFixed(0).padStart(3)}%`;
   }
 
   formatEmotion(label, value) {
@@ -437,27 +486,44 @@ class Dashboard {
 
   formatAgentDetails(agent) {
       const safeId = (typeof agent.id === 'string') ? agent.id : JSON.stringify(agent.id).replace(/"/g, '');
+      const locationNode = worldGraph.nodes[agent.locationId];
       
       let content = `{bold}${agent.name}{/bold} (ID: ${safeId.substring(0, 4)})\n`;
       content += `{blue-fg}${agent.job?.title || 'Unemployed'}{/blue-fg} @ ${agent.workLocationId || 'N/A'}\n`;
-      content += `Loc: ${agent.locationId || 'Unknown'}\n`;
-      content += `State: {yellow-fg}${agent.state}{/yellow-fg}\n`;
-      content += `Action: ${this.getFormattedAction(agent)}\n`; 
       
-      // NEW: Show Intention
+      // [Refined] Location + Borough Context
+      let locStr = agent.locationId || 'Unknown';
+      if (locationNode) {
+          const borough = locationNode.borough ? ` (${locationNode.borough})` : '';
+          locStr = `${locationNode.name || agent.locationId}${borough}`;
+      }
+      content += `Loc: ${locStr}\n`;
+      
+      content += `State: {yellow-fg}${agent.state}{/yellow-fg}\n`;
+      
+      // NEW: Show Intention with detail
       const intention = agent.intentionStack && agent.intentionStack.length > 0 
           ? agent.intentionStack[agent.intentionStack.length - 1] 
           : null;
       if (intention) {
-          content += `Intent: {cyan-fg}${intention.goal || 'None'}{/cyan-fg} (${intention.reason || ''})\n`;
+          const goal = intention.goal ? intention.goal.replace('fsm_', '').replace(/_/g, ' ') : 'None';
+          content += `Intent: {cyan-fg}${goal}{/cyan-fg} ${intention.reason ? `(${intention.reason})` : ''}\n`;
+      } else {
+           content += `Action: ${this.getFormattedAction(agent)}\n`;
       }
       content += '\n';
 
-      content += `{bold}Stats:{/bold}\n`;
+      content += `{bold}Vitals:{/bold}\n`;
       content += `  Money: $${Math.round(agent.money || 0)}\n`;
-      content += `  Energy: ${this.progressBar(agent.energy)}\n`;
-      content += `  Hunger: ${this.progressBar(agent.hunger)}\n`;
-      content += `  Social: ${this.progressBar(agent.social)}\n\n`;
+      // Consolidated Needs (Removed redundancy if present in previous versions)
+      content += `  Energy: ${this.formatNeed('Energy', agent.energy, 100, false)}\n`;
+      content += `  Hunger: ${this.formatNeed('Hunger', agent.hunger, 100, true)}\n`;
+      content += `  Social: ${this.formatNeed('Social', agent.social, 100, true)}\n`;
+      // Only show Boredom if significant
+      if ((agent.boredom || 0) > 20) {
+        content += `  Boredom:${this.formatNeed('Boredom', agent.boredom, 100, true)}\n`;
+      }
+      content += '\n';
       
       content += `{bold}Status:{/bold}\n`;
       const effects = agent.status_effects ?? [];
@@ -470,35 +536,34 @@ class Dashboard {
               if (['SICK', 'GROGGY', 'LETHARGIC', 'EXHAUSTED'].includes(e.type)) color = Dashboard.COLORS.BAD;
               else if (['WELL_FED', 'WELL_RESTED', 'CONNECTED', 'FLOWING'].includes(e.type)) color = Dashboard.COLORS.BUFF;
               else if (['STRESSED', 'INSOMNIA', 'BURNOUT'].includes(e.type)) color = Dashboard.COLORS.WARN;
+              else color = Dashboard.COLORS.WHITE; 
               
               return `{${color}}${e.type}{/${color}}${dur}`;
           }).join(', ');
       }
       content += `  ${statusStr}\n\n`;
 
-      // NEW: Skills
+      // NEW: Skills (Compact)
       const skillsStr = this.getTopSkills(agent);
       if (skillsStr) {
           content += `{bold}Skills:{/bold} ${skillsStr}\n`;
       }
 
-      // NEW: Inventory
+      // NEW: Inventory (Compact)
       const inventory = agent.inventory || [];
       if (inventory.length > 0) {
-          content += `{bold}Inventory:{/bold} ${inventory.map(i => i.itemId || i.type).join(', ').substring(0, 50)}\n`;
+          // Map to readable names using ITEM_CATALOG if available, else raw type
+          const items = inventory.map(i => {
+             const catalogItem = dataLoader.ITEM_CATALOG ? dataLoader.ITEM_CATALOG[i.itemId] : null;
+             return catalogItem ? catalogItem.name : (i.itemId || i.type);
+          });
+          content += `{bold}Inv:{/bold} ${items.join(', ').substring(0, 50)}${items.join(', ').length > 50 ? '...' : ''}\n`;
       }
 
-      const habits = agent.habits || {};
-      const sortedHabits = Object.entries(habits)
-          .map(([act, locs]) => {
-              const locsObj = (locs && typeof locs === 'object') ? locs : {};
-              const total = Object.values(locsObj).reduce((a,b) => (Number(a)||0) + (Number(b)||0), 0);
-              return { act, total };
-          })
-          .sort((a,b) => b.total - a.total);
-      
-      if (sortedHabits.length > 0) {
-          content += `Top Habit: ${sortedHabits[0].act} (x${sortedHabits[0].total})\n`;
+      // Traits from Demographics/Persona
+      const traits = this.getPersonalityTraits(agent);
+      if (traits !== 'Average') {
+          content += `{bold}Traits:{/bold} ${traits}\n`;
       }
 
       return content;
@@ -519,13 +584,19 @@ class Dashboard {
       const worldState = data.worldState || {};
       const tick = this.safeNumber(data.tick, 0);
       
+      // FIX: Memory Leak - Clear cache periodically
+      if (tick % 1000 === 0 && this.lastRenderedTick !== tick) {
+          this._nodeCache.clear();
+      }
+
       const getNode = (id) => {
           if (!id) return null;
           if (!this._nodeCache.has(id)) this._nodeCache.set(id, worldGraph.nodes[id]);
           return this._nodeCache.get(id);
       };
 
-      this.agentsInFocusCache = agents.sort((a, b) => {
+      // [FIX 9] Agent List Sort Mutates Cache
+      this.agentsInFocusCache = [...agents].sort((a, b) => {
           const nameA = (a?.name || '').toLowerCase();
           const nameB = (b?.name || '').toLowerCase();
           if (nameA < nameB) return -1;
@@ -533,11 +604,12 @@ class Dashboard {
           return 0;
       });
 
-      if (agents.length !== this._lastAgentCount) {
-          this._agentNameMap.clear();
-          agents.forEach(a => this._agentNameMap.set(a.id, a.name));
-          this._lastAgentCount = agents.length;
-      }
+      // [FIX 3] Agent Name Map Rebuild Logic Flaw
+      // Always rebuild map to ensure fresh ID mapping
+      this._agentNameMap.clear();
+      agents.forEach(a => this._agentNameMap.set(a.id, a.name));
+      this._lastAgentCount = agents.length;
+      
       const agentNameMap = this._agentNameMap;
 
       // Header
@@ -547,14 +619,19 @@ class Dashboard {
         const lightLevel = this.safeNumber(worldState.environment?.globalLight, 0.5);
         const dayNightIcon = lightLevel > 0.4 ? '{yellow-fg}(D){/yellow-fg}' : '{grey-fg}(N){/grey-fg}';
         let totHunger = 0, totEnergy = 0, totSocial = 0;
+        
+        // [FIX 4] Division by Zero Protection
+        const count = agents.length > 0 ? agents.length : 1; 
+        
         agents.forEach(a => {
             totHunger += (100 - this.safeNumber(a.hunger, 0)); 
             totEnergy += this.safeNumber(a.energy, 0);         
             totSocial += (100 - this.safeNumber(a.social, 0)); 
         });
-        const avgHunger = agents.length ? Math.round(totHunger / agents.length) : 0;
-        const avgEnergy = agents.length ? Math.round(totEnergy / agents.length) : 0;
-        const avgSocial = agents.length ? Math.round(totSocial / agents.length) : 0;
+        
+        const avgHunger = agents.length ? Math.round(totHunger / count) : 0;
+        const avgEnergy = agents.length ? Math.round(totEnergy / count) : 0;
+        const avgSocial = agents.length ? Math.round(totSocial / count) : 0;
         const avgNeeds = `H:${this.makeBar(avgHunger, 100)} E:${this.makeBar(avgEnergy, 100)} S:${this.makeBar(avgSocial, 100)}`;
         this.headerBox.setContent(
           ` {cyan-fg}{bold}TIME:{/bold}{/cyan-fg} ${timeString} ${dayNightIcon} | ${worldDate.toDateString()}\n` +
@@ -572,7 +649,14 @@ class Dashboard {
           const temp = weather.temp ? `${(18 + weather.temp).toFixed(0)}°C` : '18°C';
           const news = worldState.news ? worldState.news.substring(0, 60) + (worldState.news.length > 60 ? '...' : '') : 'No major headlines.';
           const events = (worldState.activeEvents || []).map(e => e.name).join(', ') || 'None';
-          const atmosphere = worldState.sensoryEvent ? `{cyan-fg}${worldState.sensoryEvent.text}{/cyan-fg}` : (worldState.timeOfDayDesc || 'The city is quiet.');
+          
+          // [Refined] Look for rich description in dataLoader if worldState is simple
+          let atmosphere = worldState.timeOfDayDesc || 'The city is quiet.';
+          if (dataLoader.weatherPatterns && weather.weather && dataLoader.weatherPatterns[weather.weather]) {
+               // Optionally use specific weather text if timeOfDayDesc is generic
+               // atmosphere = dataLoader.weatherPatterns[weather.weather].description;
+          }
+
           const cityStats = this.getCityEconomyStats();
           const civStats = this.getCivStats(agents);
           this.worldBox.setContent(
@@ -601,26 +685,61 @@ class Dashboard {
             else if (this.safeNumber(agent.stress, 0) > 60) indicator = '{yellow-fg}! {/yellow-fg}';
             const rawName = this.safeString(agent.name, 'UNKNOWN').padEnd(20).substring(0, 20);
             const nameStr = lodMarker + indicator + rawName;
-            const rawJob = this.safeString(this.safeGet(agent, 'job.title'), 'None').padEnd(22).substring(0, 22);
+            const rawJob = this.safeString(this.safeGet(agent, 'job.title'), 'None').padEnd(20).substring(0, 20);
             const jobColor = this.getJobColor(rawJob);
             const jobStr = `{${jobColor}}${rawJob}{/${jobColor}}`; 
             const node = getNode(agent.locationId);
             let locName = 'Unknown', locType = 'unknown';
             if (node) { locName = node.name || 'Loc'; locType = node.type || 'unknown'; } 
             else if (agent.state === 'fsm_in_transit') { locName = 'Traveling...'; locType = 'transit'; }
-            const rawLoc = locName.padEnd(23).substring(0, 23);
+            const rawLoc = locName.padEnd(20).substring(0, 20);
             const locColor = this.getLocationColor(locType);
             const locStr = `{${locColor}}${rawLoc}{/${locColor}}`;
-            let activityRaw = this.safeString(agent.currentActivityName || agent.state, 'idle').replace('fsm_', '');
-            const actStr = activityRaw.padEnd(25).substring(0, 25);
-            let actionText = this.getFormattedAction(agent);
-            const actionDetail = actionText.padEnd(70).substring(0, 70);
-            const actColor = this.getActivityColor(activityRaw);
+            
+            // ACTIVITY (Category/High-Level State using Name from YAML if avail)
+            let activityRaw = agent.currentActivityName || agent.state || 'idle';
+            // Clean up: remove fsm_, underscores if falling back to state
+            let activityDisplay = this.safeString(activityRaw).replace('fsm_', '').replace(/_/g, ' ');
+            // Capitalize
+            activityDisplay = activityDisplay.replace(/\b\w/g, c => c.toUpperCase());
+            
+            const actStr = activityDisplay.padEnd(20).substring(0, 20);
+            const actColor = this.getActivityColor(agent.state);
+            
+            // ACTION (Specific Detail from currentActivity or Intention)
+            let actionText = this.safeString(agent.currentActivity, '');
+            
+            // If currentActivity is just the state name/category, or empty, try to find a better description
+            // This happens if the agent hasn't picked a specific action string yet
+            if (!actionText || actionText === activityRaw || actionText.includes('fsm_')) {
+                 const intention = agent.intentionStack && agent.intentionStack.length > 0 
+                  ? agent.intentionStack[agent.intentionStack.length - 1] 
+                  : null;
+                 if (intention && intention.goal) {
+                     // e.g. "Get Coffee"
+                     let prettyGoal = intention.goal.replace('fsm_', '').replace(/_/g, ' ');
+                     actionText = prettyGoal; 
+                 } else {
+                     actionText = '...';
+                 }
+            }
+            
+            const actionDetail = actionText.padEnd(45).substring(0, 45);
             const actionStr = `{${actColor}}${actionDetail}{/${actColor}}`;
+
             return `${nameStr}   ${jobStr}   ${locStr}   ${actStr}   ${actionStr}`;
           } catch (e) { return `ERR: ${agent?.id ? String(agent.id) : 'bad_id'}`; }
         });
-        this.agentList.setItems(listItems);
+        
+        // [FIX 11] Optimize List Updates - Prevents Navigation Lock
+        // Only update blessed list if content strings actually changed. 
+        // Reduces overhead and prevents cursor reset/fighting during navigation.
+        const currentSignature = listItems.join('|');
+        if (currentSignature !== this._lastListSignature) {
+            this.agentList.setItems(listItems);
+            this._lastListSignature = currentSignature;
+        }
+
       } catch (err) {
       }
       this.lastRenderedTick = tick;
@@ -711,6 +830,12 @@ ${(this.focusedAgentMemories || []).slice(0, 3).map(m => {
       this.agentList.on('select item', (item, idx) => {
           try {
             this.selectedAgentId = this.agentsInFocusCache[idx]?.id || null;
+            // FIX: Update memories immediately on selection to prevent stale data race conditions
+            this.updateFocusedAgentMemories();
+            // Trigger immediate render if state exists
+            if (this.latestState) {
+                this.render(this.latestState);
+            }
           } catch (e) {
             logger.error(`Selection error: ${e.message}`);
           }

@@ -19,6 +19,12 @@ const Actions = {
         return { isDirty: true, nextState: 'fsm_idle' };
     },
 
+    EmergencyEat: (agent) => {
+        if (agent.lod === 1) console.log(`[${agent.name}] Starving while desperate. Seeking scraps.`);
+        // Force transition to eating (EatingState handles 'scraps' if broke)
+        return { isDirty: true, nextState: 'fsm_eating' };
+    },
+
     CheckForRecovery: (agent) => {
         const foodCost = GAME_BALANCE.COSTS?.GROCERIES || 20; 
         if ((agent.money ?? 0) >= foodCost) {
@@ -60,7 +66,8 @@ const Actions = {
 const Conditions = {
     IsExhausted: (agent) => {
         return (agent.stateContext.ticksInState >= agent.stateContext.maxDesperationTicks);
-    }
+    },
+    IsStarving: (agent) => (agent.hunger ?? 0) > 95
 };
 
 // === 2. BEHAVIOR TREE ===
@@ -69,6 +76,12 @@ const DesperateTree = new Sequence([
     new Action(Actions.InitDesperation),
 
     new Selector([
+        // 0. CRITICAL: Starvation Override (Prevent Death Spiral)
+        new Sequence([
+            new Condition(Conditions.IsStarving),
+            new Action(Actions.EmergencyEat)
+        ]),
+
         // 1. Give up if too tired
         new Sequence([
             new Condition(Conditions.IsExhausted),

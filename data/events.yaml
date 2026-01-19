@@ -1,5 +1,13 @@
 # ============================================================================
-# DYNAMIC AFFORDANCE MODIFIERS (NEW)
+# EVENTS & DYNAMIC RULES
+# ----------------------------------------------------------------------------
+# Source of Truth for:
+# 1. Random Encounters (things that happen to the player)
+# 2. Dynamic Modifiers (rules that change location availability/quality)
+# ============================================================================
+
+# ============================================================================
+# DYNAMIC AFFORDANCE MODIFIERS
 # ============================================================================
 dynamic_affordance_modifiers:
   # Business Closure Logic (Day of Week)
@@ -16,17 +24,14 @@ dynamic_affordance_modifiers:
   # Event-Triggered Modifiers (Temporary)
   - type: 'construction_blockade'
     applies_to_type: 'street'
-    # NOTE: This modifier requires a specific location key (e.g., 'CONSTR-SOHO') 
-    # to be set by the Matrix.
     effect: { open: false, affordance_penalty: 'all', reason: 'Blocked by construction.' }
     
   - type: 'street_fair_boost'
     applies_to_type: 'street'
     effect: { open: true, affordance_boost: 'fsm_socializing', boost_amount: 1.5, reason: 'Street fair increases socializing quality.' }
 
-
 # ============================================================================
-# RANDOM EVENTS & ENCOUNTERS
+# RANDOM ENCOUNTERS BY LOCATION TYPE
 # ============================================================================
 random_street_events:
   - { event: 'street performer juggling', frequency: 'common' }
@@ -85,6 +90,6 @@ random_bar_events:
   - { event: 'bartender refusing to serve someone', frequency: 'uncommon' }
   - { event: 'someone crying in corner', frequency: 'uncommon' }
   - { event: 'bachelor/bachelorette party', frequency: 'common' }
-  - { event: 'someone getting thrown out', frequency:i: 'uncommon' }
+  - { event: 'someone getting thrown out', frequency: 'uncommon' }
   - { event: 'regular holding court at bar', frequency: 'common' }
   - { event: 'someone spills drink everywhere', frequency: 'common' }

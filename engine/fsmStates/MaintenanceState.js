@@ -58,6 +58,8 @@ const Conditions = {
 
     CanAfford: (agent) => {
         const baseCost = (ACTIVITY_COSTS['maintenance'] || 5); 
+        // Estimate efficiency based on skill roughly to avoid soft lock if barely affordable
+        // But safer to check base cost to be conservative
         return (agent.money ?? 0) >= baseCost;
     }
 };
@@ -77,14 +79,20 @@ const MaintenanceTree = new Selector([
         new Action((a) => Actions.AbortMaintenance(a, { reason: "Home is clean" }))
     ]),
 
-    // 3. Budget Check
+    // 3. Budget Check (Check before ANY work happens)
     new Sequence([
         new Inverter(new Condition(Conditions.CanAfford)),
         new Action((a) => Actions.AbortMaintenance(a, { reason: "Cannot afford supplies" }))
     ]),
 
-    // 4. Do Work
-    new Action(Actions.RepairHome)
+    // 4. Do Work (Only reaches here if CanAfford passed)
+    new Sequence([
+        new Condition(Conditions.CanAfford), // Double check right before transaction for safety in reactive tree
+        new Action(Actions.RepairHome)
+    ]),
+    
+    // Fallback if somehow Afford passed but then failed (rare race condition), abort
+    new Action((a) => Actions.AbortMaintenance(a, { reason: "Budget inconsistency" }))
 ]);
 
 // === 3. STATE CLASS ===

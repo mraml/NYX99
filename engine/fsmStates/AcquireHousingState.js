@@ -6,6 +6,25 @@ import worldGraph from '../../data/worldGraph.js';
 // === 1. LEAF NODES ===
 
 const Actions = {
+    // NEW: Find a target if we don't have one
+    FindHousingTarget: (agent) => {
+        if (agent.targetLocationId) return Status.SUCCESS;
+
+        // Try to find a 'home' node that isn't the current one (if any)
+        // In a real sim, we'd check for vacancies. For now, random 'home' node.
+        const potentialHome = worldGraph.findRandomLocationByType('home');
+        
+        if (potentialHome) {
+            agent.targetLocationId = potentialHome.key;
+            if (agent.lod === 1) console.log(`[${agent.name}] Found potential home at ${agent.targetLocationId}`);
+            return Status.SUCCESS;
+        }
+        
+        // If no homes found, fail gracefully
+        if (agent.lod === 1) console.log(`[${agent.name}] No housing available in world.`);
+        return { isDirty: true, nextState: 'fsm_idle' }; 
+    },
+
     GiveUpHousing: (agent, { worldState }) => {
         agent.lastHousingFailureTick = worldState.currentTick;
         if (agent.lod === 1) console.log(`[${agent.name}] Cannot afford housing. Giving up.`);
@@ -79,13 +98,16 @@ const HousingTree = new Selector([
         new Action(Actions.GiveUpHousing)
     ]),
 
-    // 3. Travel Check
+    // 3. Identification (Find a target)
+    new Action(Actions.FindHousingTarget),
+
+    // 4. Travel Check
     new Sequence([
         new Inverter(new Condition(Conditions.IsAtTarget)),
         new Action(Actions.TravelToHouse)
     ]),
 
-    // 4. Execution
+    // 5. Execution
     new Action(Actions.SignLease)
 ]);
 
@@ -95,6 +117,8 @@ export class AcquireHousingState extends BaseState {
     enter(agent) {
         super.enter(agent);
         agent.currentActivity = 'Searching for New Home';
+        // Ensure target is clear on entry so we find a new one
+        agent.targetLocationId = null;
     }
 
     tick(agent, hour, localEnv, worldState) {
