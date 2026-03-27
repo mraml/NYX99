@@ -1,5 +1,8 @@
 import {
   shouldLogThinking,
+  NEED_THOUGHT_CHANCE,
+  NEED_THOUGHT_STRESS_THRESHOLD,
+  NEED_THOUGHT_MOOD_THRESHOLD
 } from '../data/config.js';
 
 import { runPerception } from './perceptionService.js';
@@ -58,8 +61,10 @@ export async function updateAgent(agent, matrix, hour) {
   // AFTER decay happens (in Transit block or after FSM tick).
 
   // 4. Memory Consolidation (Periodic)
-  // MOVED: To end of Phase 2.
-
+  if (typeof agent.updateMood === 'function') {
+      agent.updateMood();
+  }
+  
   // 5. Movement Physics
   if (agent.inTransit || agent.travelTimer > 0) {
       if (typeof agent._handleMovement === 'function') {
@@ -137,12 +142,11 @@ export async function updateAgent(agent, matrix, hour) {
     const stress = agent.stress ?? 0;
     const mood = agent.mood ?? 0;
 
-    // FIX: Reduced spam probability from 0.02 to 0.005 (0.5%).
-    // Prevents stressed agents from flooding the event log with complaints every few hours.
-    if (Math.random() < 0.005) { 
-        if (stress > 80) {
+    // FIX: Use config variables for logging probabilities and thresholds
+    if (Math.random() < NEED_THOUGHT_CHANCE) { 
+        if (stress > NEED_THOUGHT_STRESS_THRESHOLD) {
             matrix.eventBus.queue('log:agent', 'low', `[${agent.name}] I feel like I'm going to explode.`);
-        } else if (mood < 10) {
+        } else if (mood < NEED_THOUGHT_MOOD_THRESHOLD) {
             matrix.eventBus.queue('log:agent', 'low', `[${agent.name}] What's the point of all this?`);
         }
     }

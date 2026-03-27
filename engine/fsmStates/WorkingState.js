@@ -1,13 +1,14 @@
 import { BaseState } from './BaseState.js';
 import { Selector, Sequence, Condition, Action, Chance, Status } from '../BehaviorTreeCore.js';
 import { isAgentWorkShift } from '../agentUtilities.js';
+import { GAME_BALANCE } from '../../data/balance.js';
 
 // === 1. DEFINE LEAVES (REUSABLE LOGIC) ===
 
 const Conditions = {
     IsShiftOver: (agent, { hour }) => !isAgentWorkShift(agent, hour),
     
-    IsBurnedOut: (agent) => (agent.stress > 90),
+    IsBurnedOut: (agent) => (agent.stress > GAME_BALANCE.THRESHOLDS.BURNOUT_THRESHOLD),
     
     IsDistracted: (agent, { localEnv }) => 
         (localEnv.noise > 0.7 || (agent.perceivedAgents?.length > 3 && agent.persona.extroversion < 0.3))

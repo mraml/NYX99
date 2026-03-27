@@ -278,6 +278,7 @@ class CacheManager {
               agent.social = data.social;
               agent.mood = data.mood;
               agent.stress = data.stress;
+              if (data.currentActivity !== undefined) agent.currentActivity = data.currentActivity;
               agent.currentActivityName = data.currentActivityName; 
               
               // 1b. Sync Housing (Persistence Fix)

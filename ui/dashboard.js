@@ -12,6 +12,7 @@ class Dashboard {
   static MAX_RELATIONSHIPS_SHOWN = 4;
   static MAX_SKILLS_SHOWN = 3;
   static MAX_MEMORIES_SHOWN = 3;
+  static MAX_NEARBY_SHOWN = 5;
   static COLORS = {
       GOOD: 'green-fg',
       WARN: 'yellow-fg',
@@ -166,6 +167,21 @@ class Dashboard {
       vi: true,
     });
 
+    this.profilerBox = this.grid.set(8, 8, 4, 4, blessed.box, {
+      label: '{bold}[ Event Profiler (Press V to toggle) ]{/bold}',
+      tags: true,
+      border: { type: 'line' },
+      style: { border: { fg: 'yellow' } },
+      scrollable: true,
+      alwaysScroll: true,
+      mouse: true,
+      keys: true,
+      vi: true,
+      hidden: true
+    });
+
+    this.viewMode = 'logs';
+
     this.setupDataListener();
     this.startRenderLoop();
     this.setupKeybindings();
@@ -225,6 +241,33 @@ class Dashboard {
     } catch (e) { return defaultValue; }
   }
   
+  /**
+   * RESOLVE RICH NAME
+   * Forces the UI to lookup the "Flavor Name" from locations.yaml if the node
+   * name is missing or generic.
+   */
+  getRichLocationName(node) {
+      if (!node) return 'Unknown';
+      
+      // 1. Try to fetch from locations.yaml via dataLoader if available
+      try {
+          const locationsData = dataLoader.locations || {};
+          // Check if consistent_locations exists for this type
+          const namesList = locationsData.consistent_locations?.[node.type];
+          
+          if (namesList && namesList.length > 0) {
+              // Re-calculate hash to match worldGraph's logic (Deterministic)
+              // This ensures UI shows "Rudy's Bar" even if worldGraph didn't save it to the node object yet
+              const hash = node.key.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+              return namesList[hash % namesList.length];
+          }
+      } catch (e) {
+          // Fail silently to node.name
+      }
+      
+      return node.name || node.key;
+  }
+
   getFormattedAction(agent) {
       try {
           if (!agent) return 'Unknown';
@@ -487,21 +530,39 @@ class Dashboard {
   formatAgentDetails(agent) {
       const safeId = (typeof agent.id === 'string') ? agent.id : JSON.stringify(agent.id).replace(/"/g, '');
       const locationNode = worldGraph.nodes[agent.locationId];
+      const homeNode = worldGraph.nodes[agent.homeLocationId];
+      const workNode = worldGraph.nodes[agent.workLocationId];
       
       let content = `{bold}${agent.name}{/bold} (ID: ${safeId.substring(0, 4)})\n`;
-      content += `{blue-fg}${agent.job?.title || 'Unemployed'}{/blue-fg} @ ${agent.workLocationId || 'N/A'}\n`;
       
-      // [Refined] Location + Borough Context
+      // JOB: Resolve Work Location Name
+      let workName = agent.workLocationId || 'N/A';
+      if (workNode) {
+          workName = this.getRichLocationName(workNode);
+      }
+      content += `{blue-fg}${agent.job?.title || 'Unemployed'}{/blue-fg} @ ${workName}\n`;
+      
+      // CURRENT LOCATION: Resolve Rich Name + Borough
       let locStr = agent.locationId || 'Unknown';
       if (locationNode) {
           const borough = locationNode.borough ? ` (${locationNode.borough})` : '';
-          locStr = `${locationNode.name || agent.locationId}${borough}`;
+          const richName = this.getRichLocationName(locationNode); 
+          locStr = `${richName}${borough}`;
       }
-      content += `Loc: ${locStr}\n`;
+      content += `Curr: {white-fg}${locStr}{/white-fg}\n`;
+
+      // HOME: Resolve Rich Name
+      let homeStr = agent.homeLocationId || 'Homeless';
+      if (homeNode) {
+          const borough = homeNode.borough ? ` (${homeNode.borough})` : '';
+          const richName = this.getRichLocationName(homeNode);
+          homeStr = `${richName}${borough}`;
+      }
+      content += `Home: ${homeStr}\n`;
       
       content += `State: {yellow-fg}${agent.state}{/yellow-fg}\n`;
       
-      // NEW: Show Intention with detail
+      // INTENTION
       const intention = agent.intentionStack && agent.intentionStack.length > 0 
           ? agent.intentionStack[agent.intentionStack.length - 1] 
           : null;
@@ -513,13 +574,30 @@ class Dashboard {
       }
       content += '\n';
 
+      // PEOPLE NEARBY
+      // Scan the agent cache for others in the same locationId
+      const nearbyAgents = this.agentsInFocusCache.filter(a => 
+          a.id !== agent.id && 
+          a.locationId === agent.locationId
+      );
+      
+      if (nearbyAgents.length > 0) {
+          const names = nearbyAgents
+              .slice(0, Dashboard.MAX_NEARBY_SHOWN)
+              .map(a => a.name)
+              .join(', ');
+          const moreCount = nearbyAgents.length - Dashboard.MAX_NEARBY_SHOWN;
+          const moreStr = moreCount > 0 ? ` +${moreCount} others` : '';
+          content += `{bold}Nearby:{/bold} {green-fg}${names}${moreStr}{/green-fg}\n\n`;
+      } else {
+          content += `{bold}Nearby:{/bold} {grey-fg}None{/grey-fg}\n\n`;
+      }
+
       content += `{bold}Vitals:{/bold}\n`;
       content += `  Money: $${Math.round(agent.money || 0)}\n`;
-      // Consolidated Needs (Removed redundancy if present in previous versions)
       content += `  Energy: ${this.formatNeed('Energy', agent.energy, 100, false)}\n`;
       content += `  Hunger: ${this.formatNeed('Hunger', agent.hunger, 100, true)}\n`;
       content += `  Social: ${this.formatNeed('Social', agent.social, 100, true)}\n`;
-      // Only show Boredom if significant
       if ((agent.boredom || 0) > 20) {
         content += `  Boredom:${this.formatNeed('Boredom', agent.boredom, 100, true)}\n`;
       }
@@ -543,16 +621,13 @@ class Dashboard {
       }
       content += `  ${statusStr}\n\n`;
 
-      // NEW: Skills (Compact)
       const skillsStr = this.getTopSkills(agent);
       if (skillsStr) {
           content += `{bold}Skills:{/bold} ${skillsStr}\n`;
       }
 
-      // NEW: Inventory (Compact)
       const inventory = agent.inventory || [];
       if (inventory.length > 0) {
-          // Map to readable names using ITEM_CATALOG if available, else raw type
           const items = inventory.map(i => {
              const catalogItem = dataLoader.ITEM_CATALOG ? dataLoader.ITEM_CATALOG[i.itemId] : null;
              return catalogItem ? catalogItem.name : (i.itemId || i.type);
@@ -560,7 +635,6 @@ class Dashboard {
           content += `{bold}Inv:{/bold} ${items.join(', ').substring(0, 50)}${items.join(', ').length > 50 ? '...' : ''}\n`;
       }
 
-      // Traits from Demographics/Persona
       const traits = this.getPersonalityTraits(agent);
       if (traits !== 'Average') {
           content += `{bold}Traits:{/bold} ${traits}\n`;
@@ -636,7 +710,8 @@ class Dashboard {
         this.headerBox.setContent(
           ` {cyan-fg}{bold}TIME:{/bold}{/cyan-fg} ${timeString} ${dayNightIcon} | ${worldDate.toDateString()}\n` +
           ` {cyan-fg}{bold}STATUS:{/bold}{/cyan-fg} Uptime: ${tick}t | Agents: ${agents.length}\n` +
-          ` {cyan-fg}{bold}NEEDS:{/bold}{/cyan-fg}  ${avgNeeds}`
+          ` {cyan-fg}{bold}NEEDS:{/bold}{/cyan-fg}  ${avgNeeds}\n` +
+          ` {grey-fg}Keys: P pause/resume | > fast | + normal | V profiler | C-q quit{/grey-fg}`
         );
       } catch (err) {
         this.headerBox.setContent(`{red-fg}Header Error{/red-fg}`);
@@ -689,9 +764,17 @@ class Dashboard {
             const jobColor = this.getJobColor(rawJob);
             const jobStr = `{${jobColor}}${rawJob}{/${jobColor}}`; 
             const node = getNode(agent.locationId);
+            
+            // RICH LOCATION LOOKUP HERE
             let locName = 'Unknown', locType = 'unknown';
-            if (node) { locName = node.name || 'Loc'; locType = node.type || 'unknown'; } 
-            else if (agent.state === 'fsm_in_transit') { locName = 'Traveling...'; locType = 'transit'; }
+            if (node) { 
+                locName = this.getRichLocationName(node); // <--- REPLACED node.name with lookup
+                locType = node.type || 'unknown'; 
+            } else if (agent.state === 'fsm_in_transit') { 
+                locName = 'Traveling...'; 
+                locType = 'transit'; 
+            }
+            
             const rawLoc = locName.padEnd(20).substring(0, 20);
             const locColor = this.getLocationColor(locType);
             const locStr = `{${locColor}}${rawLoc}{/${locColor}}`;
@@ -789,9 +872,12 @@ ${relList || 'None'}
 
 {bold}Memories{/bold}
 ${(this.focusedAgentMemories || []).slice(0, 3).map(m => {
-    const desc = m?.description || 'No description';
+    const desc = m?.memory_text || m?.description || 'No description';
     return `- ${desc.substring(0, 40)}`;
-}).join('\n') || 'None'}`
+}).join('\n') || 'None'}
+
+{bold}Active Plans{/bold}
+${(agent.plans && agent.plans.length > 0) ? agent.plans.map(p => `- Tick ${p.tick}: ${p.type}`).join('\n') : 'No plans'}`
           );
         } else {
           this.agentDetailBox.setContent(
@@ -802,6 +888,23 @@ ${(this.focusedAgentMemories || []).slice(0, 3).map(m => {
       } catch (err) {
           this.agentDetailBox.setContent(`Render Error: ${err.message}`);
       }
+
+      // Profiler update
+      if (this.viewMode === 'profiler' && eventBus && typeof eventBus.getEventProfile === 'function') {
+          const profile = eventBus.getEventProfile();
+          let profilerContent = `{bold}Total Events Processed: {green-fg}${profile.totalEventsProcessed}{/green-fg}{/bold}\n\n`;
+          profilerContent += `{bold}Event Counts:{/bold}\n`;
+          
+          const sortedEvents = Object.entries(profile.counts)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 15);
+              
+          for (const [evtName, count] of sortedEvents) {
+              profilerContent += ` - ${evtName.padEnd(25)} : {yellow-fg}${count}{/yellow-fg}\n`;
+          }
+          this.profilerBox.setContent(profilerContent);
+      }
+
       this.screen.render();
     } catch (err) {
         // Fatal Render Error catch
@@ -827,6 +930,31 @@ ${(this.focusedAgentMemories || []).slice(0, 3).map(m => {
         eventBus.emitNow('system:shutdown');
         // Do NOT call process.exit(0) immediately. Let index.js handle the graceful shutdown sequence.
       });
+      
+      this.screen.key(['p', 'P'], () => {
+          eventBus.emitNow('system:pause');
+      });
+      
+      this.screen.key(['>'], () => {
+          eventBus.emitNow('system:speed', 4); // Fast forward
+      });
+      
+      this.screen.key(['+'], () => {
+          eventBus.emitNow('system:speed', 1); // Normal speed
+      });
+      
+      this.screen.key(['v', 'V'], () => {
+          this.viewMode = this.viewMode === 'logs' ? 'profiler' : 'logs';
+          if (this.viewMode === 'logs') {
+              this.profilerBox.hide();
+              this.logBox.show();
+          } else {
+              this.logBox.hide();
+              this.profilerBox.show();
+          }
+          this.screen.render();
+      });
+
       this.agentList.on('select item', (item, idx) => {
           try {
             this.selectedAgentId = this.agentsInFocusCache[idx]?.id || null;
@@ -856,7 +984,7 @@ ${(this.focusedAgentMemories || []).slice(0, 3).map(m => {
       };
       eventBus.on('log:agent', msg => safeLog(msg, 'white-fg'));
       eventBus.on('log:error', msg => safeLog(msg, 'red-fg'));
-      eventBus.on('log:world', msg => safeLog(msg, 'bold}{magenta-fg'));
+      eventBus.on('log:world', msg => safeLog(msg, 'magenta-fg'));
       eventBus.on('log:info', msg => safeLog(msg, 'green-fg'));
       eventBus.on('log:system', msg => safeLog(msg, 'yellow-fg'));
   }

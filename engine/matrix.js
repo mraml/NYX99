@@ -10,6 +10,7 @@ import {
 import { Worker } from 'worker_threads';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
 
 import DbService from '../dbService.js';
 import CacheManager from './cacheManager.js';
@@ -27,7 +28,8 @@ import { initWorldService, updateWorldState } from '../services/worldService.js'
 // --- CONFIGURATION ---
 const isHeadless = process.argv.includes('--headless');
 const NUM_WORKERS = Math.max(1, os.cpus().length - 1);
-const __dirname = path.resolve(path.dirname(''));
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WORKER_SCRIPT_PATH = path.join(__dirname, '..', 'workers', 'agent.worker.js');
 const WORKER_TIMEOUT_MS = 10000;
 const REBALANCE_INTERVAL_TICKS = 100; // Rebalance worker partitions every N ticks
 const MAX_WORKER_FAILURES = 3;        // Max failures before circuit breaker trips
@@ -118,6 +120,7 @@ class Matrix {
     this.targetTickRate = TICK_RATE_MS;
     this.lagStreak = 0;
     this.recoveryStreak = 0;
+    this.isPaused = false;
     
     this.initPromise = null;
   }
@@ -142,7 +145,7 @@ class Matrix {
           stderr: !isHeadless  // Pipe stderr if TUI is active
       };
 
-      const worker = new Worker(path.join(__dirname, 'workers/agent.worker.js'), workerOptions);
+      const worker = new Worker(WORKER_SCRIPT_PATH, workerOptions);
       
       // [FIX] Redirect Worker logs to Main Thread Logger (which Dashboard hooks)
       if (!isHeadless) {
@@ -479,6 +482,10 @@ class Matrix {
         // 1. Setup Globals and Event Bus
         this.eventBus = eventBus;
         global.eventBus = eventBus;
+        
+        // Setup Time Control Listeners
+        this.eventBus.on('system:pause', () => this.togglePause());
+        this.eventBus.on('system:speed', (multiplier) => this.setSpeedMultiplier(multiplier));
 
         // 2. Initialize Services (Explicit Order)
         this.dbService = new DbService(DB_PATH);
@@ -671,6 +678,17 @@ class Matrix {
     }
   }
 
+  togglePause() {
+      this.isPaused = !this.isPaused;
+      logger.info(`[Matrix] Simulation ${this.isPaused ? 'Paused' : 'Resumed'}`);
+  }
+  
+  setSpeedMultiplier(multiplier) {
+      // BASE_RATE is typically 3000ms. Multiplier 1 = 3000ms, 4 = 750ms
+      this.targetTickRate = Math.max(10, Math.floor(ADAPTIVE_PACING.BASE_RATE / multiplier));
+      logger.info(`[Matrix] Speed multiplier set to ${multiplier}x (${this.targetTickRate}ms)`);
+  }
+
   async start() {
     logger.info('[Matrix] start() called');
     try {
@@ -696,6 +714,11 @@ class Matrix {
     logger.info('[Matrix] Game Loop Started');
     
     while (this.isRunning) {
+      if (this.isPaused) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          continue;
+      }
+      
       const loopStart = Date.now();
       
       // DB HEALTH CHECK & RECOVERY

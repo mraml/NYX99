@@ -1,193 +1,64 @@
-# NYX99
+NYC 1999 Simulator - Priority 8 (Economy & World Clock)
 
-## 📖 Overview
+This is a major update that adds the foundational layer for a "society": a World Clock and a basic Economy.
 
-NYX99 is an advanced command line simulation system designed to model and simulate human behavior, social interactions, and population dynamics. The project provides a comprehensive framework for creating, managing, and analyzing simulated human societies with configurable parameters and real-time monitoring. It's a project I'm vibe coding as a long term hobby, like my own digital model train set, or terrarium, and eventually maybe a nice place for us all to live once the machines take over.
+Agents are no longer just driven by basic needs; they are now driven by a schedule and the need to earn money to survive.
 
-<img width="1736" height="1054" alt="Screenshot 2026-01-18 at 9 08 08 PM" src="https://github.com/user-attachments/assets/2158caa2-0e18-4582-9578-b38058439e28" />
+CRITICAL: Database Migration
 
-## ✨ Features
+This update adds a money column to the agents table. The old database file is now incompatible.
 
-- **Agent-Based Simulation**: Model individual humans with unique characteristics and behaviors
-- **Real-Time Monitoring**: Track simulation metrics and population dynamics through an interactive UI
-- **Scalable Architecture**: Worker-based design for handling large-scale simulations
-- **Data Persistence**: Database integration for storing simulation states and historical data
-- **Configurable Environment**: Flexible configuration system via environment variables
-- **Logging System**: Comprehensive logging for debugging and analysis
+You MUST delete your nyc_1999.db file before running this version.
 
-## 🏗️ Architecture
+What's New
 
-```
-NYX99/
-├── engine/          # Core simulation engine
-├── services/        # Business logic and service layer
-├── workers/         # Background processing workers
-├── ui/              # User interface components
-├── data/            # Data storage and models
-├── Docs/            # Documentation
-├── index.js         # Main application entry point
-├── dbService.js     # Database service layer
-├── logger.js        # Logging utilities
-└── config.env       # Configuration file
-```
+World Clock: The simulation now tracks time. Each tick advances the clock (e.g., 1 tick = 10 minutes). The current Day and Time are shown in the "Simulation Status" panel.
 
-## 🚀 Getting Started
+Money: Agents now have a money property, visible in the "Active Agents" log (e.g., $: 100).
 
-### Prerequisites
+Work: Agents have a WORKING state. During "work hours" (9:00 - 17:00), agents who need money and are at a WORK location (like OFFICE_MIDTOWN) will choose to work, earning a salary every tick.
 
-- Node.js (v14 or higher)
-- npm or yarn
-- Database (MongoDB/PostgreSQL/MySQL - specify your choice)
+Cost of Living: The EAT action now costs money. Agents will check if they can afford to eat before doing so.
 
-### Installation
+Smarter Brains: All brains (LOD 1 Rules, LOD 1 LLM, and LOD 2 Background) have been updated to understand this new economic model.
 
-1. Clone the repository:
-```bash
-git clone https://github.com/mraml/NYX99.git
-cd NYX99
-```
+New Location: Added a GROCERY_STORE as another place agents can EAT.
 
-2. Install dependencies:
-```bash
+How to Run
+
+DELETE YOUR OLD DATABASE:
+
+Find and delete the nyc_1999.db file in your project folder.
+
+Install Dependencies (No new ones, but good practice):
+
 npm install
-```
 
-3. Configure environment variables:
-```bash
-cp config.env .env
-# Edit .env with your configuration
-```
 
-4. Start the simulation:
-```bash
+Pull & Run Ollama (Mandatory):
+
+In a separate terminal, ensure your Ollama server is running with the correct model:
+
+ollama run llama3:latest
+
+
+Configure Metasim (Recommended):
+
+Open config.js and set the METASIM_AGENT_NAMES array to include just one agent you want to observe.
+
+Run the Simulation:
+
 npm start
-```
 
-## ⚙️ Configuration
 
-Edit the `config.env` file to customize simulation parameters:
+What to Observe
 
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=nyx99
+Watch the new World Time in the "Simulation Status" panel.
 
-# Simulation Parameters
-POPULATION_SIZE=1000
-SIMULATION_SPEED=1.0
-MAX_AGE=100
+Observe agent money ($:).
 
-# Worker Configuration
-WORKER_THREADS=4
+Use the arrow keys to focus on OFFICE_MIDTOWN. When the clock strikes 9:00, watch agents (especially those with low money) enter the WORKING state.
 
-# Logging
-LOG_LEVEL=info
-```
+Focus on APARTMENT_HK or GROCERY_STORE. Watch hungry agents' money decrease when they decide to EAT.
 
-## 🎮 Usage
-
-### Starting a Simulation
-
-```javascript
-const NYX99 = require('./index');
-
-const simulation = new NYX99({
-  populationSize: 1000,
-  simulationSpeed: 1.0,
-  enableUI: true
-});
-
-simulation.start();
-```
-
-## 📊 Simulation Components
-
-### Agents (Humans)
-Each simulated human has:
-- Demographic attributes (age, gender, etc.)
-- Personality traits
-- Social connections
-- Health status
-- Economic status
-- Decision-making capabilities
-
-### Environment
-The simulation environment includes:
-- Resource distribution
-- Social structures
-- Economic systems
-- Environmental conditions
-
-### Events
-Dynamic events that affect the simulation:
-- Natural events
-- Social movements
-- Economic changes
-- Health crises
-
-## 🔧 Development
-
-### Project Structure
-
-- **engine/**: Core simulation logic and algorithms
-- **services/**: Service layer for business logic
-- **workers/**: Background workers for parallel processing
-- **ui/**: Frontend interface for visualization
-- **data/**: Data models and database schemas
-
-### Running Tests
-
-```bash
-npm test
-```
-
-### Building for Production
-
-```bash
-npm run build
-```
-
-## 📚 Documentation
-
-For detailed documentation, see the [Docs](./Docs) directory:
-- [Architecture Guide](./Docs/architecture.md) (to do)
-- [API Reference](./Docs/api.md) (to do)
-- [Configuration Guide](./Docs/configuration.md) (to do)
-- [Development Guide](./Docs/development.md) (to do)
-
-## Roadmap
-
-Planned improvements 
-
-- More sophisticated map.
-- Interactive items and inventories at locations.
-- Enhance actions/activities for agents according to location and inventory.
-- Increase agent intelligence and balance scoring/needs.
-- Integrate realistic dialog, thought system. 
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Authors
-
-- **mraml** - *Initial work* - [GitHub](https://github.com/mraml)
-
-## 🙏 Acknowledgments
-
-- Inspired by the need to populate the world with simulated humans to lower your odds of being in base reality.
-
----
-
-**NYX99** - A nice place for us to live when the machines take over.
+This creates the full loop: agents will get hungry, spend money to eat, see their money go down, and then be motivated to go to work to earn it back.

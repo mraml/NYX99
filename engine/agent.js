@@ -99,7 +99,9 @@ class Agent {
         beliefs, routines, contextualRoutines, intentionStack, intentionPlan, 
         history, circadianBias, habits, financial, burnout, socialState, rent_cost,
         // [REF] New stateContext property
-        stateContext 
+        stateContext,
+        shortTermMemory,
+        plans
     } = data || {};
     
     const demographics = dataLoader.demographics;
@@ -127,6 +129,11 @@ class Agent {
     
     this.burnout = burnout ?? 0;
     this.financial = safeParseComplex(financial, { weeklyExpenses: 400, debts: [] });
+
+    this.shortTermMemory = safeParseComplex(shortTermMemory, []);
+    this.plans = safeParseComplex(plans, []);
+    if (!Array.isArray(this.plans)) this.plans = [];
+    this.plans = this.plans.filter((plan) => plan && typeof plan === 'object');
     this.habits = safeParseComplex(habits, {}); 
 
     this.state = state || 'fsm_idle';
@@ -250,6 +257,26 @@ class Agent {
       const days = this.job?.workDays || [1,2,3,4,5];
       if (!days.includes(day)) return false;
       return (hour >= this.workStartHour && hour < this.workEndHour);
+  }
+
+  updateMood() {
+      // Process recent memories and clear them
+      if (this.shortTermMemory && this.shortTermMemory.length > 0) {
+          for (const mem of this.shortTermMemory) {
+              this.mood += mem.valence || 0;
+          }
+          // Retain memories in history, but clear the queue
+          this.shortTermMemory = [];
+      }
+  
+      this.mood = Math.max(-100, Math.min(100, this.mood));
+      
+      // Decay toward 0
+      if (this.mood > 0) {
+          this.mood = Math.max(0, this.mood - 0.1);
+      } else if (this.mood < 0) {
+          this.mood = Math.min(0, this.mood + 0.1);
+      }
   }
 
   _updateStatusEffects() {
@@ -478,6 +505,8 @@ class Agent {
       beliefs: this.beliefs, 
       intentionPlan: this.intentionPlan,
       history: this.history,
+      shortTermMemory: this.shortTermMemory,
+      plans: this.plans,
       perceivedAgents: this.perceivedAgents,
       perceivedCrowding: (typeof this.perceivedCrowding === 'string') ? this.perceivedCrowding : 'empty',
       circadianBias: sanitize(this.circadianBias), 

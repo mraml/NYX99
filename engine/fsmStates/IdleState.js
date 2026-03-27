@@ -3,6 +3,19 @@ import { Selector, Sequence, Condition, Action, Status } from '../BehaviorTreeCo
 import { isAgentWorkShift } from '../agentUtilities.js';
 import eventBus from '../eventBus.js';
 import worldGraph from '../../data/worldGraph.js';
+import { GAME_BALANCE } from '../../data/balance.js';
+
+function isValidPlan(plan) {
+    return !!plan && typeof plan === 'object' && typeof plan.type === 'string' && Number.isFinite(plan.tick);
+}
+
+function isExecutableMeetPlan(plan) {
+    return plan.type === 'MEET_AGENT' &&
+        typeof plan.locationId === 'string' &&
+        plan.locationId.length > 0 &&
+        typeof plan.targetAgentId === 'string' &&
+        plan.targetAgentId.length > 0;
+}
 
 // === 1. LEAF NODES ===
 
@@ -24,7 +37,7 @@ const Actions = {
         if (energyScore > 90) energyScore *= 2.0; 
 
         // 2. Pick the Winner
-        const THRESHOLD = 50;
+        const THRESHOLD = GAME_BALANCE.THRESHOLDS.ACTION_THRESHOLD;
         
         let winner = null;
         let maxScore = -1;
@@ -38,6 +51,15 @@ const Actions = {
             maxScore = energyScore;
         }
         
+        // Survival Override (Critical Needs bypass work shift)
+        const isCriticalHunger = hungerScore > GAME_BALANCE.THRESHOLDS.CRITICAL_HUNGER;
+        const isCriticalEnergy = energyScore > GAME_BALANCE.THRESHOLDS.CRITICAL_ENERGY_SCORE;
+        
+        if (isCriticalHunger || isCriticalEnergy) {
+            if (winner === 'eat') return { isDirty: true, nextState: 'fsm_eating' };
+            if (winner === 'sleep') return { isDirty: true, nextState: 'fsm_sleeping' };
+        }
+
         // Work Override
         if (isAgentWorkShift(agent, hour)) {
             return { isDirty: true, nextState: 'fsm_working' };
@@ -96,6 +118,26 @@ const Actions = {
         return { isDirty: true, nextState: 'fsm_recreation' };
     },
 
+    ExecutePlan: (agent, { worldState }) => {
+        const plan = agent.plans[0];
+        if (!isValidPlan(plan)) {
+            agent.plans.shift();
+            return Status.FAILURE;
+        }
+
+        if (isExecutableMeetPlan(plan) && worldGraph.nodes[plan.locationId]) {
+            agent.plans.shift(); // Consume only when executable
+            agent.targetLocationId = plan.locationId;
+            agent.partnerId = plan.targetAgentId;
+            agent.intentionStack = [{ goal: 'fsm_socializing' }];
+            if (agent.lod === 1) console.log(`[${agent.name}] Executing plan to meet agent at ${plan.locationId}`);
+            return { isDirty: true, nextState: 'fsm_commuting' };
+        }
+        // Drop malformed or non-executable plan to avoid retry loops.
+        agent.plans.shift();
+        return Status.FAILURE;
+    },
+
     DoIdleBehavior: (agent, { localEnv, worldState }) => {
         const patience = agent.persona?.conscientiousness ?? 0.5;
         let boredomPenalty = (patience < 0.3) ? 4.0 : 2.0;
@@ -116,6 +158,19 @@ const Actions = {
 };
 
 const Conditions = {
+    HasPlan: (agent, { worldState }) => {
+        if (!agent.plans || agent.plans.length === 0) return false;
+        // Drop stale/malformed plans so they do not churn forever.
+        agent.plans = agent.plans.filter((plan) => {
+            if (!isValidPlan(plan)) return false;
+            return plan.tick >= worldState.currentTick - 96;
+        });
+        if (agent.plans.length === 0) return false;
+        agent.plans.sort((a, b) => a.tick - b.tick);
+        // Plan is active if we are within 20 ticks (5 hours) of the time, or past it
+        return worldState.currentTick >= agent.plans[0].tick - 20;
+    },
+
     IsHomeless: (agent) => !agent.homeLocationId,
     
     IsHouseDirty: (agent) => {
@@ -140,6 +195,12 @@ const Conditions = {
 // === 2. BEHAVIOR TREE ===
 
 const IdleTree = new Selector([
+    // 0. Priority: Plans & Commitments
+    new Sequence([
+        new Condition(Conditions.HasPlan),
+        new Action(Actions.ExecutePlan)
+    ]),
+
     // 1. Critical Survival (Homelessness)
     new Sequence([
         new Condition(Conditions.IsHomeless),

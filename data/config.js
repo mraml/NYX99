@@ -48,7 +48,9 @@ export const ENABLE_ACTION_THOUGHTS = getEnv('ENABLE_ACTION_THOUGHTS', 'true') =
 export const ACTION_THOUGHT_CHANCE = parseFloat(getEnv('ACTION_THOUGHT_CHANCE', '0.01'));
 
 export const ENABLE_NEED_THOUGHTS = getEnv('ENABLE_NEED_THOUGHTS', 'true') === 'true';
-export const NEED_THOUGHT_CHANCE = parseFloat(getEnv('NEED_THOUGHT_CHANCE', '0.01'));
+export const NEED_THOUGHT_CHANCE = parseFloat(getEnv('NEED_THOUGHT_CHANCE', '0.005'));
+export const NEED_THOUGHT_STRESS_THRESHOLD = parseInt(getEnv('NEED_THOUGHT_STRESS_THRESHOLD', '80'), 10);
+export const NEED_THOUGHT_MOOD_THRESHOLD = parseInt(getEnv('NEED_THOUGHT_MOOD_THRESHOLD', '10'), 10);
 export const LOG_CRITICAL_NEEDS_TO_MEMORY = getEnv('LOG_CRITICAL_NEEDS_TO_MEMORY', 'true') === 'true';
 
 export const ENABLE_SOCIAL_THOUGHTS = getEnv('ENABLE_SOCIAL_THOUGHTS', 'true') === 'true';

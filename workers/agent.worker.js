@@ -5,8 +5,6 @@ import * as agentService from '../services/agentService.js';
 import { FiniteStateMachine } from '../engine/fsm.js'; 
 import Agent from '../engine/agent.js'; 
 import * as socialService from '../services/socialService.js';
-// [REF] Removed perceptionService import as it is now handled inside agentService
-// import * as perceptionService from '../services/perceptionService.js'; 
 
 // --- Worker-Local State ---
 let isInitialized = false;
@@ -46,12 +44,15 @@ function serializeForIPC(agent) {
         social: agent.social,
         mood: agent.mood,
         stress: agent.stress,
+        currentActivity: agent.currentActivity,
         currentActivityName: agent.currentActivityName,
         inventory: agent.inventory,
         status_effects: agent.status_effects,
         recentActivities: agent.recentActivities,
         relationships: agent.relationships,
         history: agent.history,
+        shortTermMemory: agent.shortTermMemory,
+        plans: agent.plans,
         intentionStack: agent.intentionStack,
         // [REF] Pass stateContext across IPC for UI/Debug/Persistence
         stateContext: agent.stateContext
@@ -129,9 +130,6 @@ async function processTick(tickPayload) {
     });
 
     workerMatrixMock.cacheManager.getAllAgents = () => agents;
-
-    // [REF] Removed redundant perception loop.
-    // perceptionService.runPerception is now called inside agentService.updateAgent
 
     const walOps = [];
     

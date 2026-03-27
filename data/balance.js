@@ -88,6 +88,11 @@ export const GAME_BALANCE = {
         ENERGY_TO_SLEEP: 80,
         SOCIAL_TO_SOCIALIZE: 60,
         
+        // BT Needs Evaluation
+        CRITICAL_HUNGER: 85,
+        CRITICAL_ENERGY_SCORE: 90,
+        ACTION_THRESHOLD: 50,
+        
         // Economy
         MONEY_TO_WORK: 500, // If below this, work is prioritized
         

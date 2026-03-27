@@ -125,7 +125,7 @@ export class BaseState {
             agent.stress = Math.min(100, (agent.stress ?? 0) + stressPenalty);
             
             // Mood Spiral
-            if ((agent.stress ?? 0) > 60) {
+            if ((agent.stress ?? 0) > GAME_BALANCE.THRESHOLDS.SPIRAL_THRESHOLD) {
                 const spiralFactor = agent.persona.stressProneness > 0.6 ? 0.8 : 0.5;
                 agent.mood = Math.max(-100, (agent.mood ?? 0) - (agent.stress / 100) * spiralFactor);
             }
