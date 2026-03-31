@@ -179,7 +179,8 @@ async function processTick(tickPayload) {
                 lod1AgentsInPartition,
                 worldGraph.nodes, 
                 workerMatrixMock.eventBus, 
-                tickCount
+                tickCount,
+                workerMatrixMock.worldState
             );
         } catch (err) {
             console.error(`[Worker ${partition.workerId}] Social Service Error:`, err);

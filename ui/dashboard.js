@@ -5,7 +5,7 @@ import worldGraph from '../data/worldGraph.js';
 import { UI_RENDER_RATE_MS } from '../data/config.js';
 import logger from '../logger.js';
 // [Refined] Import the Maps to correlate data
-import { dataLoader, ACTIVITIES_MAP, ACTIVITY_COSTS } from '../data/dataLoader.js'; 
+import { dataLoader, ACTIVITIES_MAP, ACTIVITY_COSTS, POLITICS_DATA } from '../data/dataLoader.js'; 
 
 class Dashboard {
   static SPARKLINE_WIDTH = 10;
@@ -122,7 +122,7 @@ class Dashboard {
       parent: this.locationBox,
       top: 0, left: 1, right: 1, height: 1,
       tags: true,
-      content: '{bold}NAME'.padEnd(20) + '   ' + 
+      content: '{bold}NAME/AGE'.padEnd(24) + '   ' + 
                'CAREER'.padEnd(20) + '   ' + 
                'LOCATION'.padEnd(20) + '   ' + 
                'ACTIVITY'.padEnd(20) + '   ' + 
@@ -142,7 +142,7 @@ class Dashboard {
       items: ['(Loading simulants...)'],
     });
 
-    this.agentDetailBox = this.grid.set(2, 8, 6, 4, blessed.box, {
+    this.agentDetailBox = this.grid.set(2, 8, 4, 4, blessed.box, {
       label: '{bold}[ Agent Details ]{/bold}',
       content: 'Use ↑/↓ to select an agent.',
       tags: true,
@@ -153,6 +153,17 @@ class Dashboard {
       mouse: true,
       keys: true,
       vi: true,
+    });
+
+    this.politicsBox = this.grid.set(6, 8, 2, 4, blessed.box, {
+      label: '{bold}[ City Politics ]{/bold}',
+      content: 'Loading political data...',
+      tags: true,
+      border: { type: 'line' },
+      style: { border: { fg: 'magenta' } },
+      scrollable: true,
+      alwaysScroll: true,
+      mouse: true,
     });
 
     this.logBox = this.grid.set(8, 8, 4, 4, contrib.log, {
@@ -338,6 +349,12 @@ class Dashboard {
       if (p.conscientiousness > 0.7) traits.push('Diligent');
       else if (p.conscientiousness < 0.3) traits.push('Chaotic');
       return traits.length ? traits.join(', ') : 'Average';
+  }
+
+  _getOfficeTitle(officeId) {
+      const offices = POLITICS_DATA?.offices || [];
+      const match = offices.find(o => o.id === officeId);
+      return match ? match.title : officeId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   getTopSkills(agent) {
@@ -534,7 +551,35 @@ class Dashboard {
       const workNode = worldGraph.nodes[agent.workLocationId];
       
       let content = `{bold}${agent.name}{/bold} (ID: ${safeId.substring(0, 4)})\n`;
+
+      // AGE & LIFECYCLE
+      const ageDisplay = agent.age !== undefined ? agent.age : '?';
+      const stageDisplay = agent.lifeStage ? agent.lifeStage.charAt(0).toUpperCase() + agent.lifeStage.slice(1) : 'Unknown';
+      const sexDisplay = agent.sex ? (agent.sex === 'male' ? 'Male' : 'Female') : '?';
+      content += `{yellow-fg}Age: ${ageDisplay}{/yellow-fg} | ${stageDisplay} | ${sexDisplay}\n`;
       
+      // FAMILY
+      const spouseName = agent.spouseId ? (this._agentNameMap.get(agent.spouseId) || 'Unknown') : null;
+      const numChildren = (agent.childIds || []).length;
+      let familyLine = '';
+      if (spouseName) familyLine += `Spouse: {magenta-fg}${spouseName}{/magenta-fg}`;
+      if (numChildren > 0) familyLine += `${spouseName ? ' | ' : ''}Children: ${numChildren}`;
+      if (familyLine) content += familyLine + '\n';
+
+      // POLITICAL
+      if (agent.politicalParty) {
+        const partyName = agent.politicalParty.charAt(0).toUpperCase() + agent.politicalParty.slice(1);
+        const partyColor = agent.politicalParty === 'republican' ? 'red-fg' : agent.politicalParty === 'democrat' ? 'blue-fg' : 'white-fg';
+        let polLine = `{${partyColor}}${partyName}{/${partyColor}}`;
+        if (agent.politicalOffice && !agent.politicalOffice.startsWith('candidate')) {
+          const officeTitle = this._getOfficeTitle(agent.politicalOffice);
+          polLine += ` {magenta-fg}[${officeTitle}]{/magenta-fg}`;
+        } else if (agent.politicalOffice?.startsWith('candidate')) {
+          polLine += ` {yellow-fg}[Running]{/yellow-fg}`;
+        }
+        content += `Party: ${polLine} | Engagement: ${agent.politicalEngagement || 0}%\n`;
+      }
+
       // JOB: Resolve Work Location Name
       let workName = agent.workLocationId || 'N/A';
       if (workNode) {
@@ -549,7 +594,7 @@ class Dashboard {
           const richName = this.getRichLocationName(locationNode); 
           locStr = `${richName}${borough}`;
       }
-      content += `Curr: {white-fg}${locStr}{/white-fg}\n`;
+      content += `Location: {white-fg}${locStr}{/white-fg}\n`;
 
       // HOME: Resolve Rich Name
       let homeStr = agent.homeLocationId || 'Homeless';
@@ -611,8 +656,8 @@ class Dashboard {
               const dur = e.duration ? `(${e.duration}t)` : '';
               let color = Dashboard.COLORS.WHITE;
               
-              if (['SICK', 'GROGGY', 'LETHARGIC', 'EXHAUSTED'].includes(e.type)) color = Dashboard.COLORS.BAD;
-              else if (['WELL_FED', 'WELL_RESTED', 'CONNECTED', 'FLOWING'].includes(e.type)) color = Dashboard.COLORS.BUFF;
+              if (['SICK', 'GROGGY', 'LETHARGIC', 'EXHAUSTED', 'INJURED'].includes(e.type)) color = Dashboard.COLORS.BAD;
+              else if (['WELL_FED', 'WELL_RESTED', 'CONNECTED', 'FLOWING', 'PREGNANT'].includes(e.type)) color = Dashboard.COLORS.BUFF;
               else if (['STRESSED', 'INSOMNIA', 'BURNOUT'].includes(e.type)) color = Dashboard.COLORS.WARN;
               else color = Dashboard.COLORS.WHITE; 
               
@@ -690,8 +735,10 @@ class Dashboard {
       try {
         const worldDate = new Date(this.safeString(data.time));
         const timeString = worldDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const displayDate = new Date(worldDate);
+        displayDate.setFullYear(1999);
         const lightLevel = this.safeNumber(worldState.environment?.globalLight, 0.5);
-        const dayNightIcon = lightLevel > 0.4 ? '{yellow-fg}(D){/yellow-fg}' : '{grey-fg}(N){/grey-fg}';
+        const dayNightIcon = lightLevel > 0.4 ? '{yellow-fg}(Day){/yellow-fg}' : '{grey-fg}(Night){/grey-fg}';
         let totHunger = 0, totEnergy = 0, totSocial = 0;
         
         // [FIX 4] Division by Zero Protection
@@ -706,10 +753,12 @@ class Dashboard {
         const avgHunger = agents.length ? Math.round(totHunger / count) : 0;
         const avgEnergy = agents.length ? Math.round(totEnergy / count) : 0;
         const avgSocial = agents.length ? Math.round(totSocial / count) : 0;
-        const avgNeeds = `H:${this.makeBar(avgHunger, 100)} E:${this.makeBar(avgEnergy, 100)} S:${this.makeBar(avgSocial, 100)}`;
+        const avgNeeds = `Hunger:${this.makeBar(avgHunger, 100)} Energy:${this.makeBar(avgEnergy, 100)} Social:${this.makeBar(avgSocial, 100)}`;
+        const lcStats = this.cacheManager?.lifecycleStats || {};
+        const lcLine = `Born: ${lcStats.totalBirths || 0} | Died: ${lcStats.totalDeaths || 0} | Immigrated: ${lcStats.totalImmigrations || 0} | Emigrated: ${lcStats.totalEmigrations || 0}`;
         this.headerBox.setContent(
-          ` {cyan-fg}{bold}TIME:{/bold}{/cyan-fg} ${timeString} ${dayNightIcon} | ${worldDate.toDateString()}\n` +
-          ` {cyan-fg}{bold}STATUS:{/bold}{/cyan-fg} Uptime: ${tick}t | Agents: ${agents.length}\n` +
+          ` {cyan-fg}{bold}TIME:{/bold}{/cyan-fg} ${timeString} ${dayNightIcon} | ${displayDate.toDateString()}\n` +
+          ` {cyan-fg}{bold}STATUS:{/bold}{/cyan-fg} Tick: ${tick} | Population: ${agents.length} | ${lcLine}\n` +
           ` {cyan-fg}{bold}NEEDS:{/bold}{/cyan-fg}  ${avgNeeds}\n` +
           ` {grey-fg}Keys: P pause/resume | > fast | + normal | V profiler | C-q quit{/grey-fg}`
         );
@@ -736,8 +785,8 @@ class Dashboard {
           const civStats = this.getCivStats(agents);
           this.worldBox.setContent(
               `{bold}Weather:{/bold} ${weatherDesc}, ${temp}\n` +
-              `{bold}Economy:{/bold} Avg Cash: $${cityStats.avgTreasury} | Infra: ${cityStats.avgCondition}%\n` +
-              `{bold}Civ:{/bold}     Homeless: ${civStats.homeless} | Unemployed: ${civStats.unemployed} | Sick: ${civStats.sick} | Top Job: ${civStats.topJob}\n` +
+              `{bold}Economy:{/bold} Avg Cash: $${cityStats.avgTreasury} | Infrastructure: ${cityStats.avgCondition}%\n` +
+              `{bold}City Stats:{/bold} Homeless: ${civStats.homeless} | Unemployed: ${civStats.unemployed} | Sick: ${civStats.sick} | Top Job: ${civStats.topJob}\n` +
               `{bold}News:{/bold}    ${news}\n` +
               `{bold}Events:{/bold}  ${events}\n` +
               `{bold}Vibe:{/bold}    ${atmosphere}`
@@ -758,8 +807,11 @@ class Dashboard {
             let indicator = '  ';
             if (hungerBad || energyBad || socialBad) indicator = '{red-fg}‼ {/red-fg}';
             else if (this.safeNumber(agent.stress, 0) > 60) indicator = '{yellow-fg}! {/yellow-fg}';
-            const rawName = this.safeString(agent.name, 'UNKNOWN').padEnd(20).substring(0, 20);
-            const nameStr = lodMarker + indicator + rawName;
+            const ageStr = agent.age !== undefined ? `${agent.age}` : '?';
+            const stageIcon = agent.lifeStage === 'child' ? '♦' : agent.lifeStage === 'teen' ? '◊' : agent.lifeStage === 'elder' ? '○' : '';
+            const rawName = this.safeString(agent.name, 'UNKNOWN');
+            const nameWithAge = `${rawName} ${ageStr}${stageIcon}`.padEnd(24).substring(0, 24);
+            const nameStr = lodMarker + indicator + nameWithAge;
             const rawJob = this.safeString(this.safeGet(agent, 'job.title'), 'None').padEnd(20).substring(0, 20);
             const jobColor = this.getJobColor(rawJob);
             const jobStr = `{${jobColor}}${rawJob}{/${jobColor}}`; 
@@ -889,6 +941,65 @@ ${(agent.plans && agent.plans.length > 0) ? agent.plans.map(p => `- Tick ${p.tic
           this.agentDetailBox.setContent(`Render Error: ${err.message}`);
       }
 
+      // Politics Panel
+      try {
+        const polState = data.politicalState;
+        if (polState) {
+          let polContent = '';
+
+          const mayor = polState.officeholders?.mayor;
+          if (mayor) {
+            const approvalBar = this.makeBar(Math.round(mayor.approval), 100);
+            const mayorPartyName = mayor.party ? mayor.party.charAt(0).toUpperCase() + mayor.party.slice(1) : 'Independent';
+            const partyColor = mayor.party === 'republican' ? 'red-fg' : mayor.party === 'democrat' ? 'blue-fg' : 'white-fg';
+            polContent += `{bold}Mayor:{/bold} ${mayor.name} {${partyColor}}(${mayorPartyName}){/${partyColor}} ${approvalBar}\n`;
+          }
+
+          const bpIds = ['bp_manhattan', 'bp_brooklyn', 'bp_queens', 'bp_bronx', 'bp_staten_island'];
+          const bpLabels = { bp_manhattan: 'Manhattan', bp_brooklyn: 'Brooklyn', bp_queens: 'Queens', bp_bronx: 'Bronx', bp_staten_island: 'Staten Island' };
+          for (const id of bpIds) {
+            const bp = polState.officeholders?.[id];
+            if (!bp) continue;
+            const bpPartyName = bp.party ? bp.party.charAt(0).toUpperCase() + bp.party.slice(1) : 'Independent';
+            const bpColor = bp.party === 'republican' ? 'red-fg' : bp.party === 'democrat' ? 'blue-fg' : 'white-fg';
+            polContent += `{bold}${bpLabels[id]}:{/bold} ${bp.name} {${bpColor}}(${bpPartyName}){/${bpColor}}\n`;
+          }
+
+          const adv = polState.officeholders?.public_advocate;
+          if (adv) {
+            const advParty = adv.party ? adv.party.charAt(0).toUpperCase() + adv.party.slice(1) : 'Independent';
+            const advColor = adv.party === 'republican' ? 'red-fg' : adv.party === 'democrat' ? 'blue-fg' : 'white-fg';
+            polContent += `{bold}Public Advocate:{/bold} ${adv.name} {${advColor}}(${advParty}){/${advColor}}\n`;
+          }
+          const comp = polState.officeholders?.comptroller;
+          if (comp) {
+            const compParty = comp.party ? comp.party.charAt(0).toUpperCase() + comp.party.slice(1) : 'Independent';
+            const compColor = comp.party === 'republican' ? 'red-fg' : comp.party === 'democrat' ? 'blue-fg' : 'white-fg';
+            polContent += `{bold}Comptroller:{/bold} ${comp.name} {${compColor}}(${compParty}){/${compColor}}\n`;
+          }
+
+          if (polState.electionPhase === 'campaign' || polState.electionPhase === 'primary') {
+            polContent += `{yellow-fg}{bold}CAMPAIGN SEASON{/bold}{/yellow-fg}`;
+            const daysLeft = polState.termLength - polState.daysIntoTerm;
+            polContent += ` (${daysLeft} days to election)\n`;
+          } else if (polState.electionPhase === 'transition') {
+            polContent += `{green-fg}{bold}ELECTION DAY{/bold}{/green-fg}\n`;
+          } else {
+            const daysLeft = polState.termLength - polState.daysIntoTerm;
+            polContent += `Next election in ${daysLeft} days\n`;
+          }
+
+          if (polState.news && polState.news.length > 0) {
+            const latest = polState.news[polState.news.length - 1];
+            polContent += `{grey-fg}${latest.substring(0, 55)}${latest.length > 55 ? '...' : ''}{/grey-fg}`;
+          }
+
+          this.politicsBox.setContent(polContent);
+        }
+      } catch (err) {
+        this.politicsBox.setContent(`{red-fg}Politics Error{/red-fg}`);
+      }
+
       // Profiler update
       if (this.viewMode === 'profiler' && eventBus && typeof eventBus.getEventProfile === 'function') {
           const profile = eventBus.getEventProfile();
@@ -987,6 +1098,22 @@ ${(agent.plans && agent.plans.length > 0) ? agent.plans.map(p => `- Tick ${p.tic
       eventBus.on('log:world', msg => safeLog(msg, 'magenta-fg'));
       eventBus.on('log:info', msg => safeLog(msg, 'green-fg'));
       eventBus.on('log:system', msg => safeLog(msg, 'yellow-fg'));
+
+      eventBus.on('agent:born', data => safeLog(`♦ BORN: ${data.childName}`, 'green-fg'));
+      eventBus.on('agent:died', data => safeLog(`✝ DIED: ${data.name} (${data.age}y) - ${data.cause}`, 'red-fg'));
+      eventBus.on('agent:married', data => safeLog(`♥ MARRIED: ${data.names}`, 'magenta-fg'));
+      eventBus.on('agent:divorced', data => safeLog(`÷ DIVORCED`, 'yellow-fg'));
+      eventBus.on('agent:pregnant', data => safeLog(`♦ PREGNANT: ${data.name}`, 'cyan-fg'));
+      eventBus.on('agent:immigrated', data => safeLog(`→ ARRIVED: ${data.name} (${data.age}y)`, 'green-fg'));
+      eventBus.on('agent:emigrated', data => safeLog(`← LEFT: ${data.name} (${data.age}y)`, 'yellow-fg'));
+      eventBus.on('agent:lifeStageChanged', data => safeLog(`↑ ${data.name} is now a ${data.newStage} (${data.age}y)`, 'cyan-fg'));
+
+      eventBus.on('politics:electionAnnounced', () => safeLog('★ CAMPAIGN SEASON BEGINS', 'magenta-fg'));
+      eventBus.on('politics:candidateDeclared', data => safeLog(`★ ${data.name} declares for ${data.office} (${data.party})`, 'magenta-fg'));
+      eventBus.on('politics:electionResult', data => safeLog(`★ ELECTED: ${data.winner} wins ${data.office} (${data.margin}%)`, 'green-fg'));
+      eventBus.on('politics:scandal', data => safeLog(`★ SCANDAL: ${data.headline?.substring(0, 60) || data.candidate}`, 'red-fg'));
+      eventBus.on('politics:rally', data => safeLog(`★ RALLY: ${data.headline?.substring(0, 60) || data.candidate}`, 'yellow-fg'));
+      eventBus.on('politics:inauguration', data => safeLog(`★ INAUGURATED: ${data.name} as ${data.office}`, 'cyan-fg'));
   }
 }
 

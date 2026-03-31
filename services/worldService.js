@@ -2,8 +2,9 @@ import worldGraph from '../data/worldGraph.js';
 import { 
   MINUTES_PER_TICK,
 } from '../data/config.js';
-import { dataLoader } from '../data/dataLoader.js';
-import { GAME_BALANCE } from '../data/balance.js'; 
+import { dataLoader, POLITICS_DATA } from '../data/dataLoader.js';
+import { GAME_BALANCE } from '../data/balance.js';
+import { getPoliticalState, driftOpinion } from './politicsService.js'; 
 
 /**
  * services/worldService.js
@@ -18,6 +19,38 @@ let lastNewsUpdateTick = 0;
 const NEWS_UPDATE_INTERVAL_TICKS = 60; 
 
 let _weatherWeightSum = 0;
+
+/**
+ * Returns multipliers derived from the current mayor's policy positions.
+ * Other services (e.g. lifecycleService) can import this to scale mechanics.
+ */
+export function getPolicyMultipliers() {
+  try {
+    const polState = getPoliticalState();
+    const mayor = polState.officeholders?.mayor;
+    if (!mayor || !mayor.positions) return { crime: 1.0, transit: 1.0, rent: 0 };
+
+    // crime_policing: high = tough on crime → reduces mugging up to 30%
+    const crimePos = mayor.positions.crime_policing || 0;
+    const crimeMultiplier = 1 - (crimePos / 100) * 0.3;
+
+    // transit: high = pro-transit → reduces delay chance up to 30%
+    const transitPos = mayor.positions.transit || 0;
+    const transitMultiplier = 1 - (transitPos / 100) * 0.3;
+
+    // rent_housing: positive = pro-market → rent creeps up; negative = pro-tenant → stable/decrease
+    const rentPos = mayor.positions.rent_housing || 0;
+    const rentDrift = rentPos / 100;
+
+    return {
+      crime: Math.max(0.5, Math.min(1.5, crimeMultiplier)),
+      transit: Math.max(0.5, Math.min(1.5, transitMultiplier)),
+      rent: rentDrift,
+    };
+  } catch (_) {
+    return { crime: 1.0, transit: 1.0, rent: 0 };
+  }
+}
 
 export function initWorldService() {
   // Source: weather_patterns.yaml
@@ -192,7 +225,10 @@ export function handleRentDay(worldTime, tickCount, cacheManager, worldNodes, ev
           agent.stress = Math.min(100, (agent.stress ?? 0) + 80); 
           agent.mood = Math.max(-100, (agent.mood ?? 0) - 40); 
           agent.rentFailures = (agent.rentFailures ?? 0) + 1; 
-          
+
+          driftOpinion(agent, 'rent_housing', -GAME_BALANCE.POLITICS.OPINION_DRIFT_RENT_FAILURE);
+          driftOpinion(agent, 'transit', GAME_BALANCE.POLITICS.OPINION_DRIFT_RENT_FAILURE * 0.3);
+
           // Use GAME_BALANCE constants (from WORLD object)
           const anxietyDuration = GAME_BALANCE.WORLD.FINANCIAL_ANXIETY_DURATION;
           const evictionLimit = GAME_BALANCE.WORLD.EVICTION_FAILURE_COUNT;
@@ -210,6 +246,9 @@ export function handleRentDay(worldTime, tickCount, cacheManager, worldNodes, ev
 
           if (agent.rentFailures >= evictionLimit) {
             agent.transitionToState('fsm_homeless'); 
+            driftOpinion(agent, 'crime_policing', -GAME_BALANCE.POLITICS.OPINION_DRIFT_JOB_LOSS);
+            driftOpinion(agent, 'development', -GAME_BALANCE.POLITICS.OPINION_DRIFT_JOB_LOSS);
+            driftOpinion(agent, 'quality_of_life', -GAME_BALANCE.POLITICS.OPINION_DRIFT_JOB_LOSS);
             eventBus.queue('log:error', 'high', `[Matrix] EVICTION: ${agent.name} failed to pay rent ${evictionLimit} times. They are now HOMELESS.`);
             eventBus.queue('db:writeMemory', 'high', agent.id, tickCount, `I couldn't pay my $${rent} rent. I've failed ${evictionLimit} times... I'm homeless!`);
           
@@ -220,6 +259,17 @@ export function handleRentDay(worldTime, tickCount, cacheManager, worldNodes, ev
         }
       }
     }
+
+    // Rent cost drift based on mayor's housing stance
+    const rentPolicy = getPolicyMultipliers().rent;
+    for (const nodeId in worldNodes) {
+      const node = worldNodes[nodeId];
+      if (node.rent_cost && node.rent_cost > 0) {
+        const drift = node.rent_cost * rentPolicy * 0.02;
+        node.rent_cost = Math.max(100, node.rent_cost + drift);
+      }
+    }
+
     return currentMonth; 
   }
   return lastRentDay; 
@@ -313,6 +363,35 @@ export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
         if (worldState.world_events.some(e => e.type === 'HEAT_WAVE')) {
             contextualHeadlines.push("City issues heat advisory as temperatures soar for third straight day.");
         }
+
+        // Political news injection (~40% chance when political news is available)
+        try {
+            const polState = getPoliticalState();
+            if (polState.news && polState.news.length > 0 && Math.random() < 0.4) {
+                contextualHeadlines.push(polState.news[polState.news.length - 1]);
+            } else if (polState.electionPhase === 'campaign' || polState.electionPhase === 'primary') {
+                const polNews = POLITICS_DATA.political_news?.election_season || [];
+                if (polNews.length > 0) {
+                    const template = polNews[Math.floor(Math.random() * polNews.length)];
+                    const headline = template
+                        .replace('{office}', 'Mayor')
+                        .replace('{borough}', 'Brooklyn')
+                        .replace('{level}', Math.random() > 0.5 ? 'high' : 'moderate');
+                    contextualHeadlines.push(headline);
+                }
+            } else if (Math.random() < 0.2) {
+                const polNews = POLITICS_DATA.political_news?.general || [];
+                if (polNews.length > 0) {
+                    const mayor = polState.officeholders?.mayor;
+                    const template = polNews[Math.floor(Math.random() * polNews.length)];
+                    const headline = template
+                        .replace('{trend}', mayor?.approval > 50 ? 'rising' : 'falling')
+                        .replace('{percent}', Math.round(mayor?.approval || 50).toString())
+                        .replace('{borough}', ['Manhattan', 'Brooklyn', 'Queens', 'The Bronx', 'Staten Island'][Math.floor(Math.random() * 5)]);
+                    contextualHeadlines.push(headline);
+                }
+            }
+        } catch (_) { /* politics service not yet initialized */ }
         
         if (contextualHeadlines.length > 0) {
             newHeadline = contextualHeadlines[Math.floor(Math.random() * contextualHeadlines.length)];
@@ -344,8 +423,9 @@ export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
     // --- Trigger Random Events (Source: events.yaml) ---
     // Check every 200 ticks (~2 days)
     if (tickCount % 200 === 0) {
-        // 1. Subway Delay 
-        if (Math.random() < 0.1 && !worldState.world_events.some(e => e.type === 'SUBWAY_DELAY')) {
+        // 1. Subway Delay (scaled by mayor's transit stance)
+        const policyMults = getPolicyMultipliers();
+        if (Math.random() < 0.1 * policyMults.transit && !worldState.world_events.some(e => e.type === 'SUBWAY_DELAY')) {
             // Source text from events.yaml if possible
             const subEvents = eventsData.random_subway_events || [];
             const flavor = subEvents.length > 0 ? subEvents[Math.floor(Math.random() * subEvents.length)].event : "Signal Failure";
@@ -361,6 +441,20 @@ export function updateWorldState(worldTime, tickCount, worldState, eventBus) {
             worldState.world_events.push({ type: 'HEAT_WAVE', duration: duration });
             eventBus.queue('log:world', 'medium', `A HEAT_WAVE is blanketing the city for ${duration} ticks.`);
         }
+
+        // 3. Political campaign events during election season
+        try {
+            const polState = getPoliticalState();
+            if (polState.electionPhase === 'campaign' || polState.electionPhase === 'primary') {
+                if (Math.random() < 0.08 && !worldState.world_events.some(e => e.type === 'CAMPAIGN_RALLY')) {
+                    worldState.world_events.push({
+                        type: 'CAMPAIGN_RALLY',
+                        duration: Math.floor(Math.random() * 15) + 5,
+                        description: 'Campaign rally draws crowds and traffic',
+                    });
+                }
+            }
+        } catch (_) { /* politics service not yet initialized */ }
     }
 }
 

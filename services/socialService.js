@@ -3,7 +3,8 @@ import {
   LOG_ALL_SOCIALS_TO_MEMORY, 
   LOG_RELATIONSHIP_MILESTONES 
 } from '../data/config.js';
-import { dataLoader } from '../data/dataLoader.js'; // <-- IMPORTED DATA LOADER
+import { dataLoader } from '../data/dataLoader.js';
+import { getPoliticalState } from './politicsService.js';
 
 // If RELATIONSHIP_AFFINITY_GAIN was removed from config, we define a fallback here or use balance.js
 const BASE_AFFINITY_GAIN = 1.0; 
@@ -20,33 +21,50 @@ function getRandomElement(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// --- NEW: Cultural Topic Generator ---
-function generateConversationTopic(agentA, agentB) {
+function generateConversationTopic(agentA, agentB, worldState) {
     const culture = dataLoader.worldData || {};
     const allTopics = culture.conversation_topics || [];
     const slang = culture.common_slang_1999 || [];
     
-    // 1. Find shared interests
     const interestsA = agentA.interests || [];
     const interestsB = agentB.interests || [];
     const shared = interestsA.filter(i => interestsB.includes(i));
     
     let relevantTopics = [];
     
-    // 2. Filter topics by shared interests or general relevance
     if (shared.length > 0) {
         relevantTopics = allTopics.filter(t => t.interest_tags && t.interest_tags.some(tag => shared.includes(tag)));
     }
     
-    // Fallback to general/high relevance topics
     if (relevantTopics.length === 0) {
         relevantTopics = allTopics.filter(t => t.relevance === 'very_high' || t.relevance === 'high');
+    }
+
+    // Boost political topic probability when political context is active
+    let politicalBoost = false;
+    try {
+        const polState = getPoliticalState();
+        const hasPoliticalNews = worldState?.news && (
+            worldState.news.toLowerCase().includes('mayor') ||
+            worldState.news.toLowerCase().includes('election') ||
+            worldState.news.toLowerCase().includes('campaign')
+        );
+        const hasCampaignRally = (worldState?.world_events || []).some(e => e.type === 'CAMPAIGN_RALLY');
+        const isCampaignSeason = polState.electionPhase === 'campaign' || polState.electionPhase === 'primary';
+
+        if (hasPoliticalNews || hasCampaignRally || isCampaignSeason) {
+            politicalBoost = true;
+        }
+    } catch (_) {}
+
+    if (politicalBoost && Math.random() < 0.35) {
+        return { topic: 'city politics', slang: '', isPolitical: true };
     }
     
     const selectedTopic = getRandomElement(relevantTopics) || { topic: "the weather" };
     const selectedSlang = Math.random() < 0.3 ? getRandomElement(slang) : "";
     
-    return { topic: selectedTopic.topic, slang: selectedSlang };
+    return { topic: selectedTopic.topic, slang: selectedSlang, isPolitical: false };
 }
 
 function determineSocialEventType(affinityChange, topicData) {
@@ -99,7 +117,7 @@ function determineSocialEventType(affinityChange, topicData) {
   };
 }
 
-export function processSocialInteractions(lod1Agents, worldNodes, eventBus, tickCount) {
+export function processSocialInteractions(lod1Agents, worldNodes, eventBus, tickCount, worldState) {
   const socializingAgents = lod1Agents.filter(a => a.state === 'fsm_socializing');
   const processed = new Set();
 
@@ -134,9 +152,30 @@ export function processSocialInteractions(lod1Agents, worldNodes, eventBus, tick
     const extroversionA = agentA.persona?.extroversion ?? 0.5;
     if (extroversionA > 0.7) affinityChangeA += 0.5;
     
-    // --- NEW: Culture Integration ---
-    const topicData = generateConversationTopic(agentA, partner);
+    const topicData = generateConversationTopic(agentA, partner, worldState);
     
+    // Political opinion comparison: agreement bonds, disagreement creates friction
+    if (topicData.isPolitical && agentA.politicalOpinions && partner.politicalOpinions) {
+      const issues = Object.keys(agentA.politicalOpinions);
+      let totalGap = 0;
+      let sameSign = 0;
+      for (const issue of issues) {
+        const a = agentA.politicalOpinions[issue] || 0;
+        const b = partner.politicalOpinions[issue] || 0;
+        totalGap += Math.abs(a - b);
+        if (Math.sign(a) === Math.sign(b)) sameSign++;
+      }
+      const avgGap = issues.length > 0 ? totalGap / issues.length : 0;
+      
+      if (avgGap <= 40 && sameSign >= Math.ceil(issues.length * 0.6)) {
+        affinityChangeA += 3;
+        affinityChangeB += 3;
+      } else if (avgGap > 80) {
+        affinityChangeA -= 5;
+        affinityChangeB -= 5;
+      }
+    }
+
     const socialEvent = determineSocialEventType(affinityChangeA, topicData);
     const eventAffinityMod = socialEvent.baseAffinityMod; 
 
