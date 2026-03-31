@@ -20,7 +20,12 @@ import {
   generatePersona, 
   generateAspiration,
   calculateThresholds,
-  coerceObject
+  coerceObject,
+  generateSex,
+  generateRandomAge,
+  computeBirthDate,
+  computeAge,
+  computeLifeStage
 } from './agentUtilities.js';
 
 import logger from '../logger.js';
@@ -98,10 +103,15 @@ class Agent {
         minActivityDuration, mood, stress, boredom, recentActivities, 
         beliefs, routines, contextualRoutines, intentionStack, intentionPlan, 
         history, circadianBias, habits, financial, burnout, socialState, rent_cost,
-        // [REF] New stateContext property
         stateContext,
         shortTermMemory,
-        plans
+        plans,
+        // Lifecycle fields
+        sex, birthDate, age, isAlive, causeOfDeath,
+        familyId, parentIds, childIds, spouseId,
+        // Political fields
+        politicalParty, politicalOpinions, politicalOffice,
+        votingHistory, politicalEngagement
     } = data || {};
     
     const demographics = dataLoader.demographics;
@@ -113,7 +123,28 @@ class Agent {
         this.id = crypto.randomUUID();
     }
 
-    this.name = name || (demographics ? generateRandomName(demographics) : `Sim-${this.id.substring(0, 4)}`);
+    // --- Lifecycle Identity ---
+    this.sex = sex || generateSex();
+    this.isAlive = (isAlive !== undefined && isAlive !== null) ? !!isAlive : true;
+    this.causeOfDeath = causeOfDeath || null;
+    this.familyId = familyId || crypto.randomUUID();
+    this.parentIds = safeParseComplex(parentIds, []);
+    this.childIds = safeParseComplex(childIds, []);
+    this.spouseId = spouseId || null;
+
+    const simEpoch = new Date('1999-01-01T08:00:00');
+    if (birthDate) {
+        this.birthDate = birthDate instanceof Date ? birthDate.toISOString() : birthDate;
+    } else if (age !== undefined && age !== null) {
+        this.birthDate = computeBirthDate(age, simEpoch).toISOString();
+    } else {
+        const generatedAge = generateRandomAge(simEpoch);
+        this.birthDate = computeBirthDate(generatedAge, simEpoch).toISOString();
+    }
+    this.age = computeAge(this.birthDate, simEpoch);
+    this.lifeStage = computeLifeStage(this.age);
+
+    this.name = name || (demographics ? generateRandomName(demographics, this.sex) : `Sim-${this.id.substring(0, 4)}`);
     
     // FIX [P6]: Organic Variance / Jitter
     this.hunger = hunger ?? Math.floor(Math.random() * 30); 
@@ -157,7 +188,15 @@ class Agent {
     this.rent_cost = rent_cost || 0;
 
     this.job = safeParseComplex(job, null);
-    if (!this.job && demographics?.jobs) { this.job = generateRandomJob(demographics); } 
+    if (!this.job) {
+        if (this.lifeStage === 'child') {
+            this.job = { title: 'Unemployed', salary: 0, hours: [9, 17] };
+        } else if (this.lifeStage === 'elder') {
+            this.job = { title: 'Retired', salary: 0, hours: [9, 17] };
+        } else if (demographics?.jobs) {
+            this.job = generateRandomJob(demographics);
+        }
+    }
     if (this.job && !this.job.recentEvents) this.job.recentEvents = [];
     
     this.isMetasim = isMetasim || false;
@@ -197,6 +236,13 @@ class Agent {
     this.history = safeParseComplex(history, { mood: [], energy: [], stress: [], money: [] });
     this.lastSocialPartner = null; 
     this.perceivedAgents = [];
+
+    // --- Political Identity ---
+    this.politicalParty = politicalParty || null;
+    this.politicalOpinions = safeParseComplex(politicalOpinions, null);
+    this.politicalOffice = politicalOffice || null;
+    this.votingHistory = safeParseComplex(votingHistory, []);
+    this.politicalEngagement = politicalEngagement ?? 0;
 
     this.fsm = new FiniteStateMachine(this);
     this.clampStats();
@@ -509,12 +555,35 @@ class Agent {
       plans: this.plans,
       perceivedAgents: this.perceivedAgents,
       perceivedCrowding: (typeof this.perceivedCrowding === 'string') ? this.perceivedCrowding : 'empty',
-      circadianBias: sanitize(this.circadianBias), 
+      circadianBias: sanitize(this.circadianBias),
+      // Lifecycle
+      sex: sanitize(this.sex),
+      birthDate: sanitize(this.birthDate),
+      age: sanitize(this.age) ?? 30,
+      lifeStage: sanitize(this.lifeStage) || 'adult',
+      isAlive: this.isAlive ? 1 : 0,
+      causeOfDeath: sanitize(this.causeOfDeath),
+      familyId: sanitize(this.familyId),
+      parentIds: this.parentIds,
+      childIds: this.childIds,
+      spouseId: sanitize(this.spouseId),
+      // Political
+      politicalParty: sanitize(this.politicalParty),
+      politicalOpinions: this.politicalOpinions,
+      politicalOffice: sanitize(this.politicalOffice),
+      votingHistory: this.votingHistory,
+      politicalEngagement: sanitize(this.politicalEngagement) ?? 0,
     };
+  }
+
+  updateAge(worldTime) {
+    this.age = computeAge(this.birthDate, worldTime);
+    this.lifeStage = computeLifeStage(this.age);
   }
 
   toString() {
     const metaTag = this.isMetasim ? '[M] ' : '';
+    const ageTag = this.age !== undefined ? ` ${this.age}y` : '';
     let locationName = this.locationId || 'N/A';
     let homeName = this.homeLocationId || 'Homeless'; 
     let stateStr = this.currentActivity || this.state;
@@ -526,7 +595,7 @@ class Agent {
       stateStr = `COMMUTE->${goalName}`;
     }
     const needs = `(H:${Math.round(this.hunger ?? 0)} E:${Math.round(this.energy ?? 0)} S:${Math.round(this.social ?? 0)} M:${Math.round(this.money ?? 0)})`;
-    return `${metaTag}[${this.name.padEnd(18)}] @ ${locationName.padEnd(25)} [Home:${homeName}] ${stateStr.padEnd(20)} ${needs}`;
+    return `${metaTag}[${this.name.padEnd(18)}${ageTag}] @ ${locationName.padEnd(25)} [Home:${homeName}] ${stateStr.padEnd(20)} ${needs}`;
   }
 }
 export default Agent;

@@ -60,6 +60,18 @@ const Actions = {
             if (winner === 'sleep') return { isDirty: true, nextState: 'fsm_sleeping' };
         }
 
+        // Elder -> Retired state instead of work
+        if (agent.lifeStage === 'elder') {
+            return { isDirty: true, nextState: 'fsm_retired' };
+        }
+
+        // Children don't work
+        if (agent.lifeStage === 'child') {
+            if (winner === 'eat') return { isDirty: true, nextState: 'fsm_eating' };
+            if (winner === 'sleep') return { isDirty: true, nextState: 'fsm_sleeping' };
+            return Status.FAILURE;
+        }
+
         // Work Override
         if (isAgentWorkShift(agent, hour)) {
             return { isDirty: true, nextState: 'fsm_working' };

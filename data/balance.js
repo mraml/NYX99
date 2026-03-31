@@ -128,5 +128,97 @@ export const GAME_BALANCE = {
     WORLD: {
         WEATHER_CHANGE_CHANCE: 0.05,
         BASE_BUILDING_DEGRADATION: 0.01,
-    }
+    },
+
+    // --- 10. Lifecycle & Generations ---
+    LIFECYCLE: {
+        PREGNANCY_BASE_CHANCE: 0.003,
+        PREGNANCY_AGE_PENALTY_START: 35,
+        PREGNANCY_MAX_AGE: 50,
+        PREGNANCY_DURATION_DAYS: 270,
+        MAX_CHILDREN_PENALTY: 3,
+        MARRIAGE_AFFINITY_THRESHOLD: 80,
+        MARRIAGE_MIN_DATING_DAYS: 90,
+        DIVORCE_AFFINITY_THRESHOLD: 20,
+        DIVORCE_STRESS_THRESHOLD: 70,
+        DIVORCE_BASE_CHANCE: 0.001,
+        EMIGRATION_BASE_CHANCE: 0.005,
+        EMIGRATION_RENT_FAILURE_THRESHOLD: 3,
+        EMIGRATION_MOOD_THRESHOLD: -80,
+        IMMIGRATION_RATE: 2,
+        ELDER_ENERGY_PENALTY: 0.15,
+        ELDER_ILLNESS_MULTIPLIER: 2.0,
+        PENSION_DAILY_INCOME: 40,
+        CHILD_SOCIAL_DECAY_MULT: 1.5,
+        CHILD_BOREDOM_DECAY_MULT: 1.5,
+        TEEN_PART_TIME_SALARY_MULT: 0.4,
+
+        AGE_DISTRIBUTION: [
+            { min: 0, max: 12, weight: 0.15, label: 'child' },
+            { min: 13, max: 17, weight: 0.08, label: 'teen' },
+            { min: 18, max: 30, weight: 0.30, label: 'young_adult' },
+            { min: 31, max: 50, weight: 0.28, label: 'mid_career' },
+            { min: 51, max: 64, weight: 0.12, label: 'late_career' },
+            { min: 65, max: 85, weight: 0.07, label: 'elder' },
+        ],
+
+        MORTALITY_RATES: [
+            { minAge: 0, maxAge: 49, dailyChance: 0.000001 },
+            { minAge: 50, maxAge: 64, dailyChance: 0.00001 },
+            { minAge: 65, maxAge: 74, dailyChance: 0.0001 },
+            { minAge: 75, maxAge: 84, dailyChance: 0.0005 },
+            { minAge: 85, maxAge: 94, dailyChance: 0.002 },
+            { minAge: 95, maxAge: 150, dailyChance: 0.01 },
+        ],
+
+        LIFE_STAGES: {
+            CHILD_MAX: 12,
+            TEEN_MAX: 17,
+            ADULT_MAX: 64,
+        },
+    },
+
+    // --- 11. Politics & Elections ---
+    POLITICS: {
+        TERM_LENGTH_DAYS: 90,
+        CAMPAIGN_SEASON_DAYS: 20,
+        PRIMARY_DAYS_BEFORE_GENERAL: 5,
+        CANDIDATE_MIN_AGE: 25,
+        ELECTION_CHECK_INTERVAL_TICKS: 96,
+        MAX_CANDIDATES_PER_RACE: 4,
+        MIN_CANDIDATES_PER_RACE: 2,
+
+        OPINION_DRIFT_RATE: 0.5,
+        OPINION_DRIFT_RENT_FAILURE: 10,
+        OPINION_DRIFT_MUGGED: 15,
+        OPINION_DRIFT_JOB_LOSS: 8,
+
+        INCUMBENCY_BONUS: 15,
+        PARTY_LOYALTY_WEIGHT: 0.3,
+        ISSUE_ALIGNMENT_WEIGHT: 0.5,
+        CHARISMA_WEIGHT: 0.2,
+
+        CAMPAIGN_EVENT_CHANCE: 0.15,
+        SCANDAL_CHANCE: 0.05,
+        ENDORSEMENT_CHANCE: 0.10,
+        APPROVAL_DECAY_RATE: 0.1,
+        APPROVAL_BOOST_ON_WIN: 10,
+
+        CANDIDATE_WEIGHT_HIGH_SOCIAL: 2.0,
+        CANDIDATE_WEIGHT_RELEVANT_JOB: 3.0,
+        CANDIDATE_ELIGIBLE_JOBS: [
+            'Lawyer (Corporate)', 'Teacher', 'Social Worker',
+            'Journalist/Writer', 'Marketing Manager', 'Accountant',
+            'Management Consultant', 'Police Officer',
+        ],
+
+        ENGAGEMENT_BASE: 40,
+        ENGAGEMENT_POLITICS_INTEREST_BONUS: 30,
+        ENGAGEMENT_EDUCATION_COLLEGE_BONUS: 10,
+        ENGAGEMENT_EDUCATION_GRADUATE_BONUS: 15,
+        ENGAGEMENT_AGE_ELDER_BONUS: 10,
+
+        VOTER_TURNOUT_BASE: 0.35,
+        VOTER_TURNOUT_ENGAGEMENT_SCALE: 0.006,
+    },
 };

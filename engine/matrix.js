@@ -24,6 +24,9 @@ import { worldPartitioner } from './worldPartitioner.js';
 import { hydrateWorldGraph } from './worldSeeder.js';
 import logger from '../logger.js';
 import { initWorldService, updateWorldState } from '../services/worldService.js';
+import { runLifecycleTick } from '../services/lifecycleService.js';
+import { initPoliticsService, runPoliticsTick, getPoliticalState } from '../services/politicsService.js';
+import { ENABLE_LIFECYCLE } from '../data/config.js';
 
 // --- CONFIGURATION ---
 const isHeadless = process.argv.includes('--headless');
@@ -654,8 +657,13 @@ class Matrix {
     this._populateEmployees(agents);
     logger.info('[Matrix] ✓ Employees populated.');
 
-    // 12. Distribute agents to workers
-    logger.info('[Matrix] Step 12: Distributing agents to workers...');
+    // 12. Initialize politics
+    logger.info('[Matrix] Step 12: Initializing political system...');
+    initPoliticsService(this.cacheManager);
+    logger.info('[Matrix] ✓ Political system initialized.');
+
+    // 13. Distribute agents to workers
+    logger.info('[Matrix] Step 13: Distributing agents to workers...');
     this._distributeAgentsToWorkers(agents);
     logger.info('[Matrix] ✓ Agent distribution complete.');
 
@@ -915,7 +923,13 @@ class Matrix {
       if (!this.worldState.environment) this.worldState.environment = { globalLight: 0.8, globalTemp: 20 };
       updateWorldState(this.worldTime, this.tickCount, this.worldState, this.eventBus);
       this._handleDynamicWorldEvents();
-      this._cleanupStalePartitions(); // [FIX 15]
+      this._cleanupStalePartitions();
+
+      if (ENABLE_LIFECYCLE) {
+        runLifecycleTick(this.tickCount, this.worldTime, this.cacheManager, this.eventBus);
+      }
+
+      runPoliticsTick(this.tickCount, this.worldTime, this.worldState, this.cacheManager, this.eventBus);
 
       const allAgents = this.cacheManager.getAllAgents();
       
@@ -967,7 +981,8 @@ class Matrix {
         time: this.worldTime.toISOString(),
         agents: allAgents,
         worldState: this.worldState,
-        locationAgentCount: Object.fromEntries(this.locationAgentCount) // SERIALIZATION FIX: Convert Map to Object
+        locationAgentCount: Object.fromEntries(this.locationAgentCount), // SERIALIZATION FIX: Convert Map to Object
+        politicalState: getPoliticalState()
       });
     } finally {
       this.isTickInProgress = false;

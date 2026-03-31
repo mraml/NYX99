@@ -12,9 +12,18 @@ import logger from '../logger.js';
 class CacheManager {
   constructor(eventBus, dbService, matrix) { 
     this.agents = new Map();
+    this.deadAgents = new Map();
+    this.emigratedAgents = new Map();
     this.dirtyAgents = new Set();
     this.matrix = matrix; 
     
+    this.lifecycleStats = {
+        totalBirths: 0,
+        totalDeaths: 0,
+        totalImmigrations: 0,
+        totalEmigrations: 0,
+    };
+
     this.systemMetrics = {
         homeless: 0,
         unemployed: 0,
@@ -48,7 +57,8 @@ class CacheManager {
         'persona', 'job', 'interests', 'inventory', 'status_effects', 
         'relationships', 'skills', 'aspiration', 'recentActivities', 
         'routines', 'contextualRoutines', 'intentionStack', 'beliefs', 
-        'intentionPlan', 'perceivedAgents', 'history'
+        'intentionPlan', 'perceivedAgents', 'history',
+        'parentIds', 'childIds'
     ];
 
     for (const field of JSON_FIELDS) {
@@ -301,11 +311,91 @@ class CacheManager {
               // FIX: Sync Job Data to prevent "Unemployed" drift in UI
               if (data.job !== undefined) agent.job = data.job;
               
+              // Lifecycle fields
+              if (data.childIds !== undefined) agent.childIds = data.childIds;
+              if (data.spouseId !== undefined) agent.spouseId = data.spouseId;
+              if (data.partnerId !== undefined) agent.partnerId = data.partnerId;
+              if (data.age !== undefined) agent.age = data.age;
+              if (data.lifeStage !== undefined) agent.lifeStage = data.lifeStage;
+              
               this.dirtyAgents.add(agent.id);
           }
       }
   }
   
+  removeAgent(agentId, reason = 'death') {
+    const agent = this.agents.get(agentId);
+    if (!agent) return null;
+    
+    if (reason === 'death') {
+      agent.isAlive = false;
+      this.deadAgents.set(agentId, agent.serialize());
+      this.lifecycleStats.totalDeaths++;
+    } else if (reason === 'emigration') {
+      this.emigratedAgents.set(agentId, agent.serialize());
+      this.lifecycleStats.totalEmigrations++;
+    }
+    
+    this.agents.delete(agentId);
+    this.dirtyAgents.delete(agentId);
+    
+    for (const other of this.agents.values()) {
+      if (other.relationships && other.relationships[agentId]) {
+        const rel = other.relationships[agentId];
+        rel.type = reason === 'death' ? 'deceased' : 'moved_away';
+      }
+      if (other.spouseId === agentId) {
+        other.spouseId = null;
+      }
+      if (other.partnerId === agentId) {
+        other.partnerId = null;
+      }
+    }
+    
+    logger.info(`[CacheManager] Agent ${agent.name} (${agentId}) removed: ${reason}`);
+    return agent;
+  }
+  
+  createSingleAgent(data, currentTick) {
+    const agent = new Agent({ ...data, activityStartTick: currentTick });
+    agent.matrix = this.matrix;
+
+    if (!agent.homeLocationId) {
+      let availableHomes = Object.values(worldGraph.nodes).filter(n => n.type === 'home');
+      if (availableHomes.length === 0) {
+        availableHomes = Object.values(worldGraph.nodes).filter(n => 
+          ['apartment', 'condo', 'residential', 'house'].includes(n.type)
+        );
+      }
+      if (availableHomes.length === 0) {
+        availableHomes = Object.values(worldGraph.nodes);
+      }
+      if (availableHomes.length > 0) {
+        const homeNode = availableHomes[Math.floor(Math.random() * availableHomes.length)];
+        agent.homeLocationId = homeNode.key;
+        agent.locationId = homeNode.key;
+        agent.rent_cost = homeNode.rent_cost || 1200;
+      }
+    }
+    
+    if (!agent.locationId) agent.locationId = agent.homeLocationId;
+    if ((agent.money || 0) < (agent.rent_cost || 0)) {
+      agent.money = (agent.rent_cost || 1200) + 500;
+    }
+
+    this.addAgent(agent);
+    
+    if (agent.fsm && typeof agent.fsm.startInitialState === 'function') {
+      agent.fsm.startInitialState();
+    }
+
+    return agent;
+  }
+
+  getPopulationCount() {
+    return this.agents.size;
+  }
+
   getFullState() {
       return {
           agents: this.getAllAgents().map(a => a.serialize())

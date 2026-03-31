@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { GAME_BALANCE } from '../data/balance.js'; 
+import { GAME_BALANCE } from '../data/balance.js';
+const LIFECYCLE = GAME_BALANCE.LIFECYCLE;
 
 const UTILITIES_CONFIG = {
     // Work Defaults
@@ -64,12 +65,89 @@ export function isVenueClosingSoon(hour) {
 }
 
 // --- Initialization & Generation Helpers ---
-export function generateRandomName(demographics) {
-  const firstNames = demographics?.first_names || ['John'];
+export function generateSex() {
+  return Math.random() < 0.5 ? 'male' : 'female';
+}
+
+export function generateRandomName(demographics, sex = null) {
   const lastNames = demographics?.last_names || ['Doe'];
-  const first = firstNames[Math.floor(Math.random() * firstNames.length)];
   const last = lastNames[Math.floor(Math.random() * lastNames.length)];
+
+  let namePool;
+  if (sex === 'male') {
+    namePool = demographics?.male_first_names || demographics?.first_names || ['John'];
+  } else if (sex === 'female') {
+    namePool = demographics?.female_first_names || demographics?.first_names || ['Jane'];
+  } else {
+    const allNames = [
+      ...(demographics?.male_first_names || []),
+      ...(demographics?.female_first_names || []),
+      ...(demographics?.neutral_first_names || []),
+    ];
+    namePool = allNames.length > 0 ? allNames : (demographics?.first_names || ['Alex']);
+  }
+
+  const first = namePool[Math.floor(Math.random() * namePool.length)];
   return `${first} ${last}`;
+}
+
+export function generateNameWithFamily(demographics, sex, familyLastName) {
+  let namePool;
+  if (sex === 'male') {
+    namePool = demographics?.male_first_names || ['John'];
+  } else if (sex === 'female') {
+    namePool = demographics?.female_first_names || ['Jane'];
+  } else {
+    namePool = demographics?.neutral_first_names || ['Alex'];
+  }
+  const first = namePool[Math.floor(Math.random() * namePool.length)];
+  return `${first} ${familyLastName}`;
+}
+
+export function generateRandomAge(worldTime) {
+  const dist = LIFECYCLE.AGE_DISTRIBUTION;
+  const totalWeight = dist.reduce((sum, d) => sum + d.weight, 0);
+  let rand = Math.random() * totalWeight;
+  for (const bracket of dist) {
+    rand -= bracket.weight;
+    if (rand <= 0) {
+      return bracket.min + Math.floor(Math.random() * (bracket.max - bracket.min + 1));
+    }
+  }
+  return 25;
+}
+
+export function computeBirthDate(age, worldTime) {
+  const birth = new Date(worldTime);
+  birth.setFullYear(birth.getFullYear() - age);
+  birth.setMonth(Math.floor(Math.random() * 12));
+  birth.setDate(1 + Math.floor(Math.random() * 28));
+  return birth;
+}
+
+export function computeAge(birthDate, worldTime) {
+  if (!birthDate || !worldTime) return 30;
+  const birth = birthDate instanceof Date ? birthDate : new Date(birthDate);
+  const now = worldTime instanceof Date ? worldTime : new Date(worldTime);
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age--;
+  }
+  return Math.max(0, age);
+}
+
+export function computeLifeStage(age) {
+  if (age <= LIFECYCLE.LIFE_STAGES.CHILD_MAX) return 'child';
+  if (age <= LIFECYCLE.LIFE_STAGES.TEEN_MAX) return 'teen';
+  if (age <= LIFECYCLE.LIFE_STAGES.ADULT_MAX) return 'adult';
+  return 'elder';
+}
+
+export function getLastName(fullName) {
+  if (!fullName) return 'Doe';
+  const parts = fullName.split(' ');
+  return parts.length > 1 ? parts[parts.length - 1] : fullName;
 }
 
 export function generateRandomJob(demographics) {
@@ -213,4 +291,173 @@ export function calculateThresholds(persona) {
     social: GAME_BALANCE.THRESHOLDS.SOCIAL_TO_SOCIALIZE,
     work: GAME_BALANCE.THRESHOLDS.MONEY_TO_WORK + workModifier,
   };
+}
+
+// --- Political Profile Generation ---
+const POL = GAME_BALANCE.POLITICS;
+
+const PERSONA_PARTY_LEANINGS = {
+  'The Hustler':       { democrat: 0.35, republican: 0.40, liberal: 0.02, working_families: 0.03, independent: 0.20 },
+  'The Hermit':        { democrat: 0.30, republican: 0.25, liberal: 0.05, working_families: 0.05, independent: 0.35 },
+  'The Party Animal':  { democrat: 0.50, republican: 0.10, liberal: 0.15, working_families: 0.10, independent: 0.15 },
+  'The Anxious Artist':{ democrat: 0.50, republican: 0.05, liberal: 0.20, working_families: 0.15, independent: 0.10 },
+  'The Zen Master':    { democrat: 0.40, republican: 0.15, liberal: 0.10, working_families: 0.10, independent: 0.25 },
+};
+
+const BOROUGH_OPINION_BIAS = {
+  manhattan:      { crime_policing: -10, development: 10, rent_housing: -20, transit: 20, quality_of_life: -10 },
+  brooklyn:       { crime_policing: -15, development: -10, rent_housing: -30, transit: 25, quality_of_life: -15 },
+  queens:         { crime_policing: 0, development: 5, rent_housing: -15, transit: 30, quality_of_life: 0 },
+  bronx:          { crime_policing: -20, development: -15, rent_housing: -40, transit: 35, quality_of_life: -20 },
+  staten_island:  { crime_policing: 25, development: 20, rent_housing: 15, transit: -15, quality_of_life: 25 },
+};
+
+const JOB_OPINION_MODIFIERS = {
+  'Investment Banker':     { crime_policing: 10, development: 30, rent_housing: 25, transit: -10, quality_of_life: 15 },
+  'Management Consultant': { crime_policing: 5, development: 25, rent_housing: 15, transit: -5, quality_of_life: 10 },
+  'Lawyer (Corporate)':    { crime_policing: 15, development: 20, rent_housing: 20, transit: 0, quality_of_life: 10 },
+  'Teacher':               { crime_policing: -20, development: -10, rent_housing: -25, transit: 20, quality_of_life: -15 },
+  'Social Worker':         { crime_policing: -30, development: -20, rent_housing: -35, transit: 25, quality_of_life: -25 },
+  'Police Officer':        { crime_policing: 40, development: 5, rent_housing: 5, transit: 0, quality_of_life: 35 },
+  'Firefighter':           { crime_policing: 20, development: 0, rent_housing: -5, transit: 10, quality_of_life: 15 },
+  'Nurse':                 { crime_policing: -10, development: -5, rent_housing: -15, transit: 15, quality_of_life: -5 },
+  'Bartender':             { crime_policing: -5, development: -15, rent_housing: -20, transit: 10, quality_of_life: -20 },
+  'Artist (Freelance)':    { crime_policing: -25, development: -30, rent_housing: -35, transit: 15, quality_of_life: -30 },
+  'Musician (Gigging)':    { crime_policing: -20, development: -25, rent_housing: -30, transit: 10, quality_of_life: -25 },
+  'Actor (Auditioning)':   { crime_policing: -15, development: -20, rent_housing: -25, transit: 10, quality_of_life: -20 },
+  'Journalist/Writer':     { crime_policing: -15, development: -10, rent_housing: -20, transit: 15, quality_of_life: -15 },
+  'Retail Associate':      { crime_policing: 0, development: -5, rent_housing: -15, transit: 10, quality_of_life: 0 },
+  'Software Developer (Web)': { crime_policing: -5, development: 15, rent_housing: 0, transit: 5, quality_of_life: -5 },
+};
+
+function _pickPartyWeighted(weights) {
+  const parties = Object.keys(weights);
+  const totalWeight = parties.reduce((sum, p) => sum + weights[p], 0);
+  let rand = Math.random() * totalWeight;
+  for (const party of parties) {
+    rand -= weights[party];
+    if (rand <= 0) return party;
+  }
+  return 'democrat';
+}
+
+export function generatePoliticalProfile(agent) {
+  if (!agent || agent.lifeStage === 'child') {
+    return { party: null, opinions: null, engagement: 0 };
+  }
+
+  const persona = agent.persona || {};
+  const personaName = _matchPersonaArchetype(persona);
+  const borough = _getAgentBorough(agent);
+  const jobTitle = agent.job?.title || '';
+  const salary = agent.job?.salary || 0;
+
+  // 1. Party assignment -- blend persona + borough + income
+  let partyWeights = { ...(PERSONA_PARTY_LEANINGS[personaName] || PERSONA_PARTY_LEANINGS['The Zen Master']) };
+
+  if (borough === 'staten_island') {
+    partyWeights.republican = (partyWeights.republican || 0.2) + 0.15;
+    partyWeights.democrat = Math.max(0, (partyWeights.democrat || 0.5) - 0.10);
+  } else if (borough === 'bronx' || borough === 'brooklyn') {
+    partyWeights.democrat = (partyWeights.democrat || 0.5) + 0.10;
+    partyWeights.working_families = (partyWeights.working_families || 0.05) + 0.05;
+  }
+
+  if (salary > 80000) {
+    partyWeights.republican = (partyWeights.republican || 0.2) + 0.10;
+  } else if (salary < 30000 && salary > 0) {
+    partyWeights.democrat = (partyWeights.democrat || 0.5) + 0.05;
+    partyWeights.working_families = (partyWeights.working_families || 0.05) + 0.05;
+  }
+
+  const party = _pickPartyWeighted(partyWeights);
+
+  // 2. Opinions -- start from random baseline, layer borough + job + income + personality
+  const opinions = {
+    crime_policing: (Math.random() * 40) - 20,
+    development: (Math.random() * 40) - 20,
+    rent_housing: (Math.random() * 40) - 20,
+    transit: (Math.random() * 40) - 20,
+    quality_of_life: (Math.random() * 40) - 20,
+  };
+
+  const boroughBias = BOROUGH_OPINION_BIAS[borough];
+  if (boroughBias) {
+    for (const issue in boroughBias) {
+      opinions[issue] += boroughBias[issue];
+    }
+  }
+
+  const jobMod = JOB_OPINION_MODIFIERS[jobTitle];
+  if (jobMod) {
+    for (const issue in jobMod) {
+      opinions[issue] += jobMod[issue];
+    }
+  }
+
+  if (salary > 80000) {
+    opinions.development += 15;
+    opinions.rent_housing += 15;
+    opinions.crime_policing += 10;
+  } else if (salary < 30000 && salary > 0) {
+    opinions.rent_housing -= 20;
+    opinions.transit += 10;
+  }
+
+  const extroversion = persona.extroversion ?? 0.5;
+  const openness = persona.openness ?? 0.5;
+  opinions.quality_of_life += (0.5 - openness) * 30;
+  opinions.crime_policing += (0.5 - extroversion) * 10;
+
+  for (const issue in opinions) {
+    opinions[issue] = Math.max(-100, Math.min(100, Math.round(opinions[issue])));
+  }
+
+  // 3. Engagement
+  let engagement = POL.ENGAGEMENT_BASE;
+  if (agent.interests && agent.interests.includes('politics')) {
+    engagement += POL.ENGAGEMENT_POLITICS_INTEREST_BONUS;
+  }
+  if (agent.lifeStage === 'elder') engagement += POL.ENGAGEMENT_AGE_ELDER_BONUS;
+  if (agent.lifeStage === 'teen') engagement = Math.max(5, engagement - 25);
+
+  const educationReq = agent.job?.education_req || '';
+  if (educationReq === 'Graduate') {
+    engagement += POL.ENGAGEMENT_EDUCATION_GRADUATE_BONUS;
+  } else if (educationReq === 'College') {
+    engagement += POL.ENGAGEMENT_EDUCATION_COLLEGE_BONUS;
+  }
+
+  engagement += (Math.random() * 20) - 10;
+  engagement = Math.max(0, Math.min(100, Math.round(engagement)));
+
+  return { party, opinions, engagement };
+}
+
+function _matchPersonaArchetype(persona) {
+  const e = persona.extroversion ?? 0.5;
+  const c = persona.conscientiousness ?? 0.5;
+  const s = persona.stressProneness ?? 0.5;
+
+  let bestMatch = 'The Zen Master';
+  let bestDist = Infinity;
+  for (const arch of ARCHETYPES) {
+    const dist = Math.abs(arch.e - e) + Math.abs(arch.c - c) + Math.abs(arch.s - s);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestMatch = arch.name;
+    }
+  }
+  return bestMatch;
+}
+
+function _getAgentBorough(agent) {
+  const locId = agent.homeLocationId || agent.locationId || '';
+  if (typeof locId !== 'string') return 'manhattan';
+  if (locId.startsWith('manhattan')) return 'manhattan';
+  if (locId.startsWith('brooklyn')) return 'brooklyn';
+  if (locId.startsWith('queens')) return 'queens';
+  if (locId.startsWith('bronx')) return 'bronx';
+  if (locId.startsWith('staten_island')) return 'staten_island';
+  return 'manhattan';
 }

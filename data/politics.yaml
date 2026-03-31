@@ -1,0 +1,367 @@
+# ============================================================================
+# NYC 1999 POLITICAL SYSTEM
+# ----------------------------------------------------------------------------
+# Offices, parties, issues, initial officeholders, campaign events,
+# and political news -- modeled on the real NYC political landscape of 1999.
+# ============================================================================
+
+# ============================================================================
+# ELECTED OFFICES
+# ============================================================================
+offices:
+  - id: mayor
+    title: 'Mayor'
+    scope: citywide
+    term_length_days: 90
+    description: 'Chief executive of the City of New York'
+  - id: public_advocate
+    title: 'Public Advocate'
+    scope: citywide
+    term_length_days: 90
+    description: 'Ombudsman and watchdog for city government'
+  - id: comptroller
+    title: 'Comptroller'
+    scope: citywide
+    term_length_days: 90
+    description: 'Chief financial officer of the city'
+  - id: bp_manhattan
+    title: 'Manhattan Borough President'
+    scope: manhattan
+    term_length_days: 90
+    description: 'Borough president of Manhattan'
+  - id: bp_brooklyn
+    title: 'Brooklyn Borough President'
+    scope: brooklyn
+    term_length_days: 90
+    description: 'Borough president of Brooklyn'
+  - id: bp_queens
+    title: 'Queens Borough President'
+    scope: queens
+    term_length_days: 90
+    description: 'Borough president of Queens'
+  - id: bp_bronx
+    title: 'Bronx Borough President'
+    scope: bronx
+    term_length_days: 90
+    description: 'Borough president of the Bronx'
+  - id: bp_staten_island
+    title: 'Staten Island Borough President'
+    scope: staten_island
+    term_length_days: 90
+    description: 'Borough president of Staten Island'
+
+# ============================================================================
+# POLITICAL PARTIES
+# ============================================================================
+parties:
+  - id: democrat
+    name: 'Democrat'
+    weight: 0.65
+    color: 'blue'
+    base_positions:
+      crime_policing: -30
+      development: -10
+      rent_housing: -50
+      transit: 40
+      quality_of_life: -20
+  - id: republican
+    name: 'Republican'
+    weight: 0.20
+    color: 'red'
+    base_positions:
+      crime_policing: 60
+      development: 50
+      rent_housing: 40
+      transit: -20
+      quality_of_life: 50
+  - id: liberal
+    name: 'Liberal Party'
+    weight: 0.05
+    color: 'magenta'
+    base_positions:
+      crime_policing: -50
+      development: -20
+      rent_housing: -60
+      transit: 50
+      quality_of_life: -40
+  - id: working_families
+    name: 'Working Families'
+    weight: 0.05
+    color: 'green'
+    base_positions:
+      crime_policing: -40
+      development: -40
+      rent_housing: -70
+      transit: 60
+      quality_of_life: -30
+  - id: independent
+    name: 'Independent'
+    weight: 0.05
+    color: 'white'
+    base_positions:
+      crime_policing: 0
+      development: 0
+      rent_housing: 0
+      transit: 0
+      quality_of_life: 0
+
+# ============================================================================
+# KEY POLITICAL ISSUES (1999 NYC)
+# ============================================================================
+issues:
+  - id: crime_policing
+    label: 'Crime & Policing'
+    negative_label: 'Civil Liberties'
+    positive_label: 'Tough on Crime'
+    description: 'Broken windows policing, stop-and-frisk, CompStat, Amadou Diallo'
+  - id: development
+    label: 'Development'
+    negative_label: 'Preservation'
+    positive_label: 'Pro-Development'
+    description: 'Times Square cleanup, gentrification, Disney-fication of Manhattan'
+  - id: rent_housing
+    label: 'Rent & Housing'
+    negative_label: 'Pro-Tenant'
+    positive_label: 'Pro-Market'
+    description: 'Rent stabilization, tenant protections, affordable housing crisis'
+  - id: transit
+    label: 'Transit'
+    negative_label: 'Fiscal Restraint'
+    positive_label: 'More MTA Funding'
+    description: 'Subway reliability, MetroCard expansion, MTA capital plan'
+  - id: quality_of_life
+    label: 'Quality of Life'
+    negative_label: 'Oppose Crackdowns'
+    positive_label: 'Support Crackdowns'
+    description: 'Squeegee men, jaywalking tickets, street vendor regulation'
+
+# ============================================================================
+# INITIAL OFFICEHOLDERS (Sim Start ~ 1999)
+# ============================================================================
+initial_officeholders:
+  mayor:
+    name: 'Rudolph Giuliani'
+    party: republican
+    approval: 55
+    positions:
+      crime_policing: 80
+      development: 60
+      rent_housing: 40
+      transit: -10
+      quality_of_life: 80
+  public_advocate:
+    name: 'Mark Green'
+    party: democrat
+    approval: 50
+    positions:
+      crime_policing: -40
+      development: -20
+      rent_housing: -50
+      transit: 30
+      quality_of_life: -30
+  comptroller:
+    name: 'Alan Hevesi'
+    party: democrat
+    approval: 48
+    positions:
+      crime_policing: -10
+      development: 10
+      rent_housing: -30
+      transit: 20
+      quality_of_life: -10
+  bp_manhattan:
+    name: 'C. Virginia Fields'
+    party: democrat
+    approval: 52
+    positions:
+      crime_policing: -30
+      development: -20
+      rent_housing: -50
+      transit: 40
+      quality_of_life: -20
+  bp_brooklyn:
+    name: 'Howard Golden'
+    party: democrat
+    approval: 45
+    positions:
+      crime_policing: -10
+      development: 20
+      rent_housing: -30
+      transit: 30
+      quality_of_life: 0
+  bp_queens:
+    name: 'Claire Shulman'
+    party: democrat
+    approval: 50
+    positions:
+      crime_policing: 0
+      development: 30
+      rent_housing: -20
+      transit: 40
+      quality_of_life: 10
+  bp_bronx:
+    name: 'Fernando Ferrer'
+    party: democrat
+    approval: 58
+    positions:
+      crime_policing: -50
+      development: -30
+      rent_housing: -60
+      transit: 50
+      quality_of_life: -40
+  bp_staten_island:
+    name: 'Guy Molinari'
+    party: republican
+    approval: 52
+    positions:
+      crime_policing: 50
+      development: 40
+      rent_housing: 30
+      transit: -10
+      quality_of_life: 50
+
+# ============================================================================
+# CAMPAIGN EVENT TEMPLATES
+# ============================================================================
+campaign_events:
+  rallies:
+    - '{candidate} holds rally in {borough}, promises to fight for working families'
+    - '{candidate} speaks at {location}, draws crowd of supporters'
+    - '{candidate} debates rivals at town hall in {borough}'
+    - '{candidate} marches through {borough} shaking hands and kissing babies'
+    - '{candidate} holds press conference on steps of City Hall'
+    - '{candidate} rallies union workers at labor hall'
+    - '{candidate} hosts community forum on crime in {borough}'
+    - '{candidate} appears at senior center in {borough}, talks transit'
+    - 'Supporters of {candidate} hand out flyers across {borough}'
+    - '{candidate} gives fiery speech at rally: "This city deserves better!"'
+  scandals:
+    - '{candidate} accused of misusing campaign funds'
+    - 'Former aide claims {candidate} made backroom deal with developers'
+    - '{candidate} caught in embarrassing photo at nightclub'
+    - 'Rival campaign leaks damaging memo about {candidate}'
+    - '{candidate} faces questions about unreported income'
+    - 'Anonymous tip alleges {candidate} has ties to organized crime'
+    - '{candidate} flip-flops on rent control stance, opponents pounce'
+    - '{candidate} no-shows scheduled debate, campaign cites "scheduling conflict"'
+    - 'NY Post runs front page exposé on {candidate}''s past'
+    - '{candidate} staffer quits, calls campaign "a circus"'
+  endorsements:
+    - '{endorser} endorses {candidate} for {office}: "The clear choice"'
+    - 'Police union backs {candidate} in {office} race'
+    - 'Teachers union throws support behind {candidate}'
+    - 'Transit workers endorse {candidate}, citing transit platform'
+    - 'NY Daily News editorial board endorses {candidate}'
+    - 'NY Post endorses {candidate} for {office}'
+    - 'Local church leaders rally behind {candidate}'
+    - 'Prominent business leaders announce support for {candidate}'
+    - 'Community board in {borough} endorses {candidate}'
+    - '{candidate} picks up key endorsement from outgoing {office}'
+
+# ============================================================================
+# POLITICAL NEWS HEADLINES
+# ============================================================================
+political_news:
+  general:
+    - 'City Hall insiders say mayor''s approval rating is {trend}'
+    - 'Poll shows {percent}% of New Yorkers approve of mayor''s job performance'
+    - 'Political analysts debate who will run in next election'
+    - 'Voter registration drive sweeps through {borough}'
+    - 'Community board meeting in {borough} gets heated over development'
+    - 'Borough president of {borough} announces new initiative'
+    - 'City comptroller raises concerns about budget shortfall'
+    - 'Public advocate calls for investigation into city contracts'
+    - 'Political operatives already jockeying for next election cycle'
+    - 'Albany and City Hall clash over funding priorities'
+  election_season:
+    - 'Campaign season heats up as candidates crisscross the city'
+    - 'New poll shows tight race for {office}'
+    - 'Candidates spar over crime policy at debate'
+    - 'Rent control emerges as key issue in {office} race'
+    - 'Transit funding becomes flashpoint in campaign'
+    - 'Voter turnout expected to be {level} in upcoming election'
+    - 'Undecided voters could swing {office} race'
+    - 'Campaign spending breaks records in {office} contest'
+    - 'Last-minute attack ads flood airwaves in {office} race'
+    - 'Both parties scramble to get out the vote in {borough}'
+  results:
+    - '{winner} wins {office} in {margin} victory'
+    - '{winner} elected {office}, promises "a new direction for the city"'
+    - 'Upset! {winner} defeats incumbent in {office} race'
+    - '{winner} cruises to victory in {office} contest'
+    - 'Voters send clear message, elect {winner} as {office}'
+    - '{winner} claims mandate after decisive {office} win'
+    - 'Close race: {winner} edges out {loser} for {office}'
+    - 'Record turnout propels {winner} to {office}'
+
+# ============================================================================
+# TIMED WORLD EVENTS (1999 NYC Historical)
+# ============================================================================
+# These fire based on sim-date, adding historical texture.
+# month is 0-indexed (0=Jan, 1=Feb, ..., 11=Dec).
+# opinion_drift applies to all agents (or scoped by borough).
+timed_events:
+  - id: diallo_aftermath
+    title: 'Amadou Diallo Aftermath'
+    month: 1
+    day_range: [4, 28]
+    recurrence: periodic
+    interval_days: 7
+    headlines:
+      - 'Protests continue over Amadou Diallo shooting; demonstrators arrested at City Hall'
+      - 'Rev. Al Sharpton leads march across Brooklyn Bridge demanding police accountability'
+      - 'Community leaders call for independent review of NYPD shooting policies'
+      - 'Vigil held in the Bronx for Amadou Diallo; crowd demands justice'
+    opinion_drift:
+      issue: crime_policing
+      amount: -3
+      borough_boost: { bronx: -5 }
+
+  - id: y2k_preparation
+    title: 'Y2K Preparation'
+    month_range: [3, 11]
+    recurrence: escalating
+    interval_days: 14
+    headlines:
+      - 'City announces Y2K preparedness plan for critical infrastructure'
+      - 'Banks assure customers: "Your money is safe" as Y2K fears mount'
+      - 'Tech workers pull overtime as companies race to patch Y2K bugs'
+      - 'MTA tests subway systems for Y2K compliance; officials cautiously optimistic'
+      - 'FEMA releases Y2K emergency guide; New Yorkers advised to stock supplies'
+      - 'Wall Street firms spend millions on Y2K readiness as December approaches'
+      - 'Mayor reassures city: "We will be ready for the millennium"'
+    opinion_drift:
+      issue: transit
+      amount: -1
+
+  - id: sensation_controversy
+    title: 'Brooklyn Museum "Sensation" Controversy'
+    month: 9
+    day_range: [1, 31]
+    recurrence: periodic
+    interval_days: 5
+    headlines:
+      - 'Giuliani threatens to cut Brooklyn Museum funding over "Sensation" exhibit'
+      - 'First Amendment groups rally behind Brooklyn Museum in art censorship battle'
+      - 'Art world vs. City Hall: "Sensation" exhibit becomes national controversy'
+      - 'Brooklyn Museum defies mayor, opens "Sensation" to record crowds'
+      - 'Giuliani calls artwork "disgusting"; museum supporters call it censorship'
+    opinion_drift:
+      issue: quality_of_life
+      amount: -2
+      borough_boost: { brooklyn: -3 }
+
+  - id: transit_fare_debate
+    title: 'Transit Fare Hike Debate'
+    month_range: [4, 8]
+    recurrence: periodic
+    interval_days: 10
+    headlines:
+      - 'MTA board considers fare hike; riders brace for higher costs'
+      - 'Straphangers Campaign rallies against proposed subway fare increase'
+      - 'Commuters furious as MTA floats $2.00 MetroCard fare'
+      - 'City Council members demand MTA find savings before raising fares'
+      - 'Transit advocates warn fare hike will hurt working-class New Yorkers most'
+    opinion_drift:
+      issue: transit
+      amount: -2

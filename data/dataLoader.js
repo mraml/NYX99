@@ -21,6 +21,7 @@ export const CROWD_SCHEDULES = {};
 export const RANDOM_EVENTS = {};
 export const DIALOGUE_LIBRARY = {};
 export const CULTURE_DATA = {};
+export const POLITICS_DATA = {};
 // --- END ---
 
 
@@ -220,7 +221,8 @@ class DataLoader {
         'activities.yaml', 
         'crowd_schedules.yaml',
         'weather_patterns.yaml',
-        'dialogue.yaml'
+        'dialogue.yaml',
+        'politics.yaml'
     ];
 
     // Load sequentially just to get clean logs (parallel is faster, but this debugs better)
@@ -238,7 +240,8 @@ class DataLoader {
       activitiesData,
       crowdData,
       weatherData,
-      dialogueData
+      dialogueData,
+      politicsData
     ] = results;
 
     // --- CRITICAL CHECK ---
@@ -281,6 +284,12 @@ class DataLoader {
 
     if (crowdData?.schedules) {
         Object.assign(CROWD_SCHEDULES, crowdData.schedules);
+    }
+
+    if (politicsData) {
+        this.politics = politicsData;
+        Object.assign(POLITICS_DATA, politicsData);
+        this.log(`[DataLoader] Loaded politics data: ${politicsData.offices?.length || 0} offices, ${politicsData.parties?.length || 0} parties.`);
     }
     
     this.log('[DataLoader] ✅ All YAML data loaded successfully.', 'medium');

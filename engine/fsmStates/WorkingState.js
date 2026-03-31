@@ -102,9 +102,12 @@ export class WorkingState extends BaseState {
     
     enter(agent) {
         super.enter(agent);
+
+        if (agent.lifeStage === 'child' || agent.lifeStage === 'elder') {
+            agent.state = agent.lifeStage === 'elder' ? 'fsm_retired' : 'fsm_idle';
+            return;
+        }
         
-        // [FIX] Set Activity Name based on Job Type to source from activities.yaml
-        // This ensures flavor text like "typing at desk" appears instead of generic strings.
         const title = (agent.job?.title || '').toLowerCase();
         if (title.includes('officer') || title.includes('police')) {
             agent.currentActivityName = 'patrolling (police)';

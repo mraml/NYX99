@@ -181,8 +181,7 @@ personality_archetypes:
   - { primary: 'open', secondary: 'spontaneous', name: 'Curious Explorer' }
   - { primary: 'stable', secondary: 'introverted', name: 'Calm Observer' }
 
-first_names:
-  # Common 90s Male
+male_first_names:
   - 'Michael'
   - 'Christopher'
   - 'Matthew'
@@ -270,7 +269,8 @@ first_names:
   - 'Bobby'
   - 'Philip'
   - 'Johnny'
-  # Common 90s Female
+
+female_first_names:
   - 'Jessica'
   - 'Ashley'
   - 'Jennifer'
@@ -359,7 +359,8 @@ first_names:
   - 'Kayla'
   - 'Alyssa'
   - 'Taylor'
-  # Gender Neutral/Ambiguous
+
+neutral_first_names:
   - 'Alex'
   - 'Jordan'
   - 'Sam'
@@ -608,3 +609,22 @@ interests:
   - 'internet_cafes'
   - 'poetry_slams'
   - 'raves'
+
+# ============================================================================
+# LIFE EVENTS
+# ============================================================================
+life_events:
+  accidents:
+    - { type: 'traffic_accident', chance_per_day: 0.0002, mortality: 0.05, description: 'was in a traffic accident' }
+    - { type: 'workplace_injury', chance_per_day: 0.0001, mortality: 0.01, description: 'was injured at work' }
+    - { type: 'mugging', chance_per_day: 0.0003, mortality: 0.005, description: 'was mugged' }
+    - { type: 'apartment_fire', chance_per_day: 0.00005, mortality: 0.1, description: 'was caught in an apartment fire' }
+    - { type: 'slip_and_fall', chance_per_day: 0.0003, mortality: 0.001, description: 'slipped and fell' }
+    - { type: 'subway_incident', chance_per_day: 0.00008, mortality: 0.02, description: 'was involved in a subway incident' }
+  illnesses:
+    - { type: 'flu', chance_per_day: 0.002, duration_days: 5, mortality: 0.0001, description: 'came down with the flu' }
+    - { type: 'food_poisoning', chance_per_day: 0.001, duration_days: 2, mortality: 0.00001, description: 'got food poisoning' }
+    - { type: 'cold', chance_per_day: 0.003, duration_days: 3, mortality: 0, description: 'caught a cold' }
+    - { type: 'serious_illness', chance_per_day: 0.0002, duration_days: 30, mortality: 0.02, description: 'was diagnosed with a serious illness' }
+    - { type: 'back_pain', chance_per_day: 0.001, duration_days: 7, mortality: 0, description: 'threw out their back' }
+    - { type: 'broken_bone', chance_per_day: 0.0003, duration_days: 42, mortality: 0, description: 'broke a bone' }

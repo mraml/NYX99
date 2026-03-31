@@ -9,6 +9,7 @@ import { MaintenanceState } from './fsmStates/MaintenanceState.js';
 import { CommutingState } from './fsmStates/CommutingState.js';
 import { AcquireHousingState } from './fsmStates/AcquireHousingState.js';
 import { DesperateState } from './fsmStates/DesperateState.js';
+import { RetiredState } from './fsmStates/RetiredState.js';
 import { GAME_BALANCE } from '../data/balance.js';
 import eventBus from '../engine/eventBus.js';
 
@@ -71,6 +72,9 @@ const STATE_REGISTRY = {
     'fsm_idle_default': new IdleState(),
     'fsm_idle_homeless': new IdleState(),
     'fsm_homeless': new IdleState(),
+
+    // --- RETIRED ---
+    'fsm_retired': new RetiredState(),
 };
 
 // Default fallback

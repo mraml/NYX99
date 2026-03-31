@@ -11,7 +11,7 @@ const getEnv = (key, defaultValue) => process.env[key] || defaultValue;
 export const TICK_RATE_MS = parseInt(getEnv('TICK_RATE_MS', 3000), 10);
 export const UI_RENDER_RATE_MS = parseInt(getEnv('UI_RENDER_RATE_MS', 500), 10);
 export const MINUTES_PER_TICK = parseInt(getEnv('MINUTES_PER_TICK', 15), 10);
-export const INITIAL_AGENTS = parseInt(getEnv('INITIAL_AGENTS', 1000), 10);
+export const INITIAL_AGENTS = parseInt(getEnv('INITIAL_AGENTS', 5000), 10);
 
 // --- 2. Database & Persistence ---
 export const DB_PATH = getEnv('DB_PATH', './nyc_1999.db');
@@ -34,7 +34,12 @@ export const METASIM_AGENT_NAMES = ['Neo', 'Trinity', 'Morpheus', 'Agent Smith']
 export const LOD2_TICK_INTERVAL = 10; 
 export const LOD2_LOCATION_CHANGE_CHANCE = 0.1;
 
-// --- 6. Debugging & Logging ---
+// --- 6. Lifecycle & Population ---
+export const TARGET_POPULATION = parseInt(getEnv('TARGET_POPULATION', '1000'), 10);
+export const LIFECYCLE_CHECK_INTERVAL_TICKS = 96; // once per sim-day
+export const ENABLE_LIFECYCLE = getEnv('ENABLE_LIFECYCLE', 'true') === 'true';
+
+// --- 7. Debugging & Logging ---
 // These control the "Legacy" thought bubbles. 
 // Note: Deep Sim thoughts (Lizard Brain/Scorer) ignore these and always log on change.
 export const ENABLE_DECISION_THOUGHTS = getEnv('ENABLE_DECISION_THOUGHTS', 'true') === 'true';
