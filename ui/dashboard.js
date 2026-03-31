@@ -94,6 +94,14 @@ class Dashboard {
     this._agentNameMap = new Map();
     this._lastAgentCount = 0;
 
+    // Observer / auto-cycle state
+    this.autoCycleMode = false;     // false | 60 | 600
+    this.autoCycleSpeed = 60;       // ticks between agent advances
+    this.autoCycleAgentIdx = 0;     // current position in agentsInFocusCache
+    this.autoCycleDetailPage = 0;   // 0-3 rotating sub-page
+    this.autoCycleLastAgentTick = 0;
+    this.autoCycleLastDetailTick = 0;
+
     // --- Layout ---
     this.headerBox = this.grid.set(0, 0, 2, 8, blessed.box, {
       label: '{bold}[ Architect\'s Console ]{/bold}',
@@ -122,7 +130,7 @@ class Dashboard {
       parent: this.locationBox,
       top: 0, left: 1, right: 1, height: 1,
       tags: true,
-      content: '{bold}NAME/AGE'.padEnd(24) + '   ' + 
+      content: '{bold}' + ' '.repeat(4) + 'NAME/AGE'.padEnd(24) + '   ' + 
                'CAREER'.padEnd(20) + '   ' + 
                'LOCATION'.padEnd(20) + '   ' + 
                'ACTIVITY'.padEnd(20) + '   ' + 
@@ -605,18 +613,7 @@ class Dashboard {
       }
       content += `Home: ${homeStr}\n`;
       
-      content += `State: {yellow-fg}${agent.state}{/yellow-fg}\n`;
-      
-      // INTENTION
-      const intention = agent.intentionStack && agent.intentionStack.length > 0 
-          ? agent.intentionStack[agent.intentionStack.length - 1] 
-          : null;
-      if (intention) {
-          const goal = intention.goal ? intention.goal.replace('fsm_', '').replace(/_/g, ' ') : 'None';
-          content += `Intent: {cyan-fg}${goal}{/cyan-fg} ${intention.reason ? `(${intention.reason})` : ''}\n`;
-      } else {
-           content += `Action: ${this.getFormattedAction(agent)}\n`;
-      }
+      content += `Action: {cyan-fg}${this.getFormattedAction(agent)}{/cyan-fg}\n`;
       content += '\n';
 
       // PEOPLE NEARBY
@@ -756,11 +753,14 @@ class Dashboard {
         const avgNeeds = `Hunger:${this.makeBar(avgHunger, 100)} Energy:${this.makeBar(avgEnergy, 100)} Social:${this.makeBar(avgSocial, 100)}`;
         const lcStats = this.cacheManager?.lifecycleStats || {};
         const lcLine = `Born: ${lcStats.totalBirths || 0} | Died: ${lcStats.totalDeaths || 0} | Immigrated: ${lcStats.totalImmigrations || 0} | Emigrated: ${lcStats.totalEmigrations || 0}`;
+        const obsIndicator = this.autoCycleMode
+          ? ` | {yellow-fg}[OBS ${this.autoCycleSpeed}t p${this.autoCycleDetailPage + 1}/4]{/yellow-fg}`
+          : '';
         this.headerBox.setContent(
           ` {cyan-fg}{bold}TIME:{/bold}{/cyan-fg} ${timeString} ${dayNightIcon} | ${displayDate.toDateString()}\n` +
-          ` {cyan-fg}{bold}STATUS:{/bold}{/cyan-fg} Tick: ${tick} | Population: ${agents.length} | ${lcLine}\n` +
+          ` {cyan-fg}{bold}STATUS:{/bold}{/cyan-fg} Tick: ${tick} | Population: ${agents.length} | ${lcLine}${obsIndicator}\n` +
           ` {cyan-fg}{bold}NEEDS:{/bold}{/cyan-fg}  ${avgNeeds}\n` +
-          ` {grey-fg}Keys: P pause/resume | > fast | + normal | V profiler | C-q quit{/grey-fg}`
+          ` {grey-fg}Keys: P pause | > fast | + normal | V profiler | C observer | C-q quit{/grey-fg}`
         );
       } catch (err) {
         this.headerBox.setContent(`{red-fg}Header Error{/red-fg}`);
@@ -879,13 +879,32 @@ class Dashboard {
       }
       this.lastRenderedTick = tick;
 
+      // Observer auto-cycle: advance agent and detail page on schedule
+      if (this.autoCycleMode && agents.length > 0) {
+        if (tick - this.autoCycleLastAgentTick >= this.autoCycleSpeed) {
+          this.autoCycleAgentIdx = (this.autoCycleAgentIdx + 1) % this.agentsInFocusCache.length;
+          this.selectedAgentId = this.agentsInFocusCache[this.autoCycleAgentIdx]?.id || null;
+          this.autoCycleLastAgentTick = tick;
+          this.autoCycleDetailPage = 0;
+          this.updateFocusedAgentMemories();
+          this.agentList.select(this.autoCycleAgentIdx);
+        }
+        if (tick - this.autoCycleLastDetailTick >= 10) {
+          this.autoCycleDetailPage = (this.autoCycleDetailPage + 1) % 4;
+          this.autoCycleLastDetailTick = tick;
+        }
+      }
+
       // Agent Details
       try {
         const agent = this.selectedAgentId ? agents.find(a => a.id === this.selectedAgentId) : null;
         if (agent) {
-          this.agentDetailBox.setLabel(`{bold}[ ${agent.name} ]{/bold}`);
-          const formattedDetails = this.formatAgentDetails(agent);
-          
+          const obsLabel = this.autoCycleMode
+            ? ` {yellow-fg}[OBS ${this.autoCycleSpeed}t p${this.autoCycleDetailPage + 1}/4]{/yellow-fg}`
+            : '';
+          this.agentDetailBox.setLabel(`{bold}[ ${agent.name} ]{/bold}${obsLabel}`);
+
+          // Build relationship list (used in both normal and observer modes)
           const rels = agent.relationships ?? {};
           const relList = Object.entries(rels)
               .filter(([id, r]) => r && id)
@@ -906,8 +925,127 @@ class Dashboard {
                    const pNameStr = pName.substring(0, 18).padEnd(18);
                    return ` - ${pNameStr} {${color}}${r.type}{/${color}}${sharedStr} ${bar}`;
               }).join('\n');
-          
-          this.agentDetailBox.setContent(
+
+          if (this.autoCycleMode) {
+            // Observer mode: render one focused page at a time
+            let pageContent = '';
+            const pg = this.autoCycleDetailPage;
+
+            if (pg === 0) {
+              // Page 0: Identity & Status
+              const locationNode = worldGraph.nodes[agent.locationId];
+              const homeNode = worldGraph.nodes[agent.homeLocationId];
+              const workNode = worldGraph.nodes[agent.workLocationId];
+              const ageDisplay = agent.age !== undefined ? agent.age : '?';
+              const stageDisplay = agent.lifeStage ? agent.lifeStage.charAt(0).toUpperCase() + agent.lifeStage.slice(1) : 'Unknown';
+              const sexDisplay = agent.sex ? (agent.sex === 'male' ? 'Male' : 'Female') : '?';
+              const spouseName = agent.spouseId ? (agentNameMap.get(agent.spouseId) || 'Unknown') : null;
+              const numChildren = (agent.childIds || []).length;
+              let locStr = agent.locationId || 'Unknown';
+              if (locationNode) {
+                locStr = this.getRichLocationName(locationNode) + (locationNode.borough ? ` (${locationNode.borough})` : '');
+              }
+              let homeStr = agent.homeLocationId || 'Homeless';
+              if (homeNode) homeStr = this.getRichLocationName(homeNode) + (homeNode.borough ? ` (${homeNode.borough})` : '');
+              let workName = agent.workLocationId || 'N/A';
+              if (workNode) workName = this.getRichLocationName(workNode);
+              const nearbyAgents = this.agentsInFocusCache.filter(a => a.id !== agent.id && a.locationId === agent.locationId);
+              const nearbyStr = nearbyAgents.length > 0
+                ? nearbyAgents.slice(0, 4).map(a => a.name).join(', ') + (nearbyAgents.length > 4 ? ` +${nearbyAgents.length - 4}` : '')
+                : 'None';
+
+              pageContent =
+                `{yellow-fg}Age: ${ageDisplay}{/yellow-fg} | ${stageDisplay} | ${sexDisplay}` +
+                (spouseName ? `\nSpouse: {magenta-fg}${spouseName}{/magenta-fg}` + (numChildren > 0 ? ` | Children: ${numChildren}` : '') : (numChildren > 0 ? `\nChildren: ${numChildren}` : '')) + '\n' +
+                `{blue-fg}${agent.job?.title || 'Unemployed'}{/blue-fg} @ ${workName}\n` +
+                `Location: {white-fg}${locStr}{/white-fg}\n` +
+                `Home:     ${homeStr}\n` +
+                `State:    {yellow-fg}${agent.state}{/yellow-fg}\n` +
+                `Action:   ${this.getFormattedAction(agent)}\n` +
+                `Money:    $${Math.round(agent.money || 0)}\n` +
+                `\n{bold}Nearby:{/bold} {green-fg}${nearbyStr}{/green-fg}`;
+
+            } else if (pg === 1) {
+              // Page 1: Vitals & Emotions
+              const effects = agent.status_effects ?? [];
+              let statusStr = '{green-fg}Normal{/green-fg}';
+              if (effects.length > 0) {
+                statusStr = effects.map(e => {
+                  const dur = e.duration ? `(${e.duration}t)` : '';
+                  let color = Dashboard.COLORS.WHITE;
+                  if (['SICK', 'GROGGY', 'LETHARGIC', 'EXHAUSTED', 'INJURED'].includes(e.type)) color = Dashboard.COLORS.BAD;
+                  else if (['WELL_FED', 'WELL_RESTED', 'CONNECTED', 'FLOWING', 'PREGNANT'].includes(e.type)) color = Dashboard.COLORS.BUFF;
+                  else if (['STRESSED', 'INSOMNIA', 'BURNOUT'].includes(e.type)) color = Dashboard.COLORS.WARN;
+                  return `{${color}}${e.type}{/${color}}${dur}`;
+                }).join(', ');
+              }
+
+              pageContent =
+                `{bold}Needs & Emotions{/bold}\n` +
+                `Mood:    ${this.formatEmotion('Mood', agent.mood)} ${this.makeSparkline(agent.history?.mood, 10, 'cyan')}\n` +
+                `Stress:  ${this.formatEmotion('Stress', agent.stress)} ${this.makeSparkline(agent.history?.stress, 10, 'red')}\n` +
+                `Burnout: ${this.formatEmotion('Burnout', agent.burnout)}\n\n` +
+                `${this.formatNeed('Energy', agent.energy, 100, false)} ${this.makeSparkline(agent.history?.energy, 8, 'yellow')}\n` +
+                `${this.formatNeed('Hunger', agent.hunger, 100, true)}\n` +
+                `${this.formatNeed('Social', agent.social, 100, true)}\n` +
+                `${this.formatNeed('Boredom', agent.boredom, 100, true)}\n\n` +
+                `{bold}Status:{/bold} ${statusStr}`;
+
+            } else if (pg === 2) {
+              // Page 2: Relationships & Skills
+              const skillsStr = this.getTopSkills(agent);
+              const traits = this.getPersonalityTraits(agent);
+              const inventory = agent.inventory || [];
+              const invStr = inventory.length > 0
+                ? inventory.map(i => {
+                    const cat = dataLoader.ITEM_CATALOG?.[i.itemId];
+                    return cat ? cat.name : (i.itemId || i.type);
+                  }).join(', ').substring(0, 50)
+                : 'Nothing';
+
+              pageContent =
+                `{bold}Relationships{/bold}\n` +
+                (relList || 'None') + '\n\n' +
+                `{bold}Skills:{/bold}   ${skillsStr || 'None'}\n` +
+                `{bold}Traits:{/bold}   ${traits}\n` +
+                `{bold}Inventory:{/bold} ${invStr}`;
+
+            } else {
+              // Page 3: Memories, Plans & Politics
+              const memories = (this.focusedAgentMemories || []).slice(0, 5).map(m => {
+                const desc = m?.memory_text || m?.description || 'No description';
+                return `- ${desc.substring(0, 44)}`;
+              }).join('\n') || 'None';
+
+              const plans = (agent.plans && agent.plans.length > 0)
+                ? agent.plans.map(p => `- Tick ${p.tick}: ${p.type}`).join('\n')
+                : 'No plans';
+
+              let polStr = 'No profile';
+              if (agent.politicalParty && agent.politicalOpinions) {
+                const partyName = agent.politicalParty.charAt(0).toUpperCase() + agent.politicalParty.slice(1);
+                const partyColor = agent.politicalParty === 'republican' ? 'red-fg' : agent.politicalParty === 'democrat' ? 'blue-fg' : 'white-fg';
+                const opinionLines = Object.entries(agent.politicalOpinions).map(([issue, val]) => {
+                  const label = issue.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).substring(0, 16).padEnd(16);
+                  const normalized = Math.round((val + 100) / 2); // -100..100 -> 0..100
+                  const bar = this.progressBar(normalized);
+                  return `  ${label} ${bar} ${val > 0 ? '+' : ''}${val}`;
+                }).join('\n');
+                polStr = `{${partyColor}}${partyName}{/${partyColor}} | Engagement: ${agent.politicalEngagement || 0}%\n${opinionLines}`;
+              }
+
+              pageContent =
+                `{bold}Memories{/bold}\n${memories}\n\n` +
+                `{bold}Plans{/bold}\n${plans}\n\n` +
+                `{bold}Politics{/bold}\n${polStr}`;
+            }
+
+            this.agentDetailBox.setContent(pageContent);
+
+          } else {
+            // Normal mode: full combined view
+            const formattedDetails = this.formatAgentDetails(agent);
+            this.agentDetailBox.setContent(
               formattedDetails + 
               `{bold}Needs & Emotions{/bold}
 Mood:   ${this.formatEmotion('Mood', agent.mood)} ${this.makeSparkline(agent.history?.mood, 10, 'cyan')}
@@ -930,7 +1068,8 @@ ${(this.focusedAgentMemories || []).slice(0, 3).map(m => {
 
 {bold}Active Plans{/bold}
 ${(agent.plans && agent.plans.length > 0) ? agent.plans.map(p => `- Tick ${p.tick}: ${p.type}`).join('\n') : 'No plans'}`
-          );
+            );
+          }
         } else {
           this.agentDetailBox.setContent(
               `\n{center}{bold}No Agent Selected{/bold}{/center}\n\n` +
@@ -1066,8 +1205,32 @@ ${(agent.plans && agent.plans.length > 0) ? agent.plans.map(p => `- Tick ${p.tic
           this.screen.render();
       });
 
+      this.screen.key(['c', 'C'], () => {
+          if (!this.autoCycleMode) {
+              // off -> 60t: start from the currently selected agent's position
+              this.autoCycleMode = true;
+              this.autoCycleSpeed = 60;
+              const curIdx = this.agentsInFocusCache.findIndex(a => a.id === this.selectedAgentId);
+              this.autoCycleAgentIdx = curIdx >= 0 ? curIdx : 0;
+              this.autoCycleDetailPage = 0;
+              this.autoCycleLastAgentTick = this.latestState?.tick ?? 0;
+              this.autoCycleLastDetailTick = this.latestState?.tick ?? 0;
+          } else if (this.autoCycleSpeed === 60) {
+              // 60t -> 600t
+              this.autoCycleSpeed = 600;
+          } else {
+              // 600t -> off
+              this.autoCycleMode = false;
+          }
+          if (this.latestState) this.render(this.latestState);
+      });
+
       this.agentList.on('select item', (item, idx) => {
           try {
+            // Manual selection cancels observer mode
+            if (this.autoCycleMode) {
+                this.autoCycleMode = false;
+            }
             this.selectedAgentId = this.agentsInFocusCache[idx]?.id || null;
             // FIX: Update memories immediately on selection to prevent stale data race conditions
             this.updateFocusedAgentMemories();
