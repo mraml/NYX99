@@ -1,0 +1,54 @@
+# ============================================================================
+# CROWD COMPOSITION SCHEDULES
+# ----------------------------------------------------------------------------
+# Defines the *expected* demographic and density of locations by time of day.
+# This is used by AI agents to decide if a location "feels right" for them.
+# ============================================================================
+
+schedules:
+  office:
+    - { hours: [7, 9], demographics: ['professionals', 'corporate'], density: 0.8, reason: 'morning_arrival' }
+    - { hours: [9, 12], demographics: ['professionals', 'corporate'], density: 0.6, reason: 'working' }
+    - { hours: [12, 14], demographics: ['professionals', 'corporate'], density: 0.4, reason: 'lunch_rush' }
+    - { hours: [14, 17], demographics: ['professionals', 'corporate'], density: 0.5, reason: 'afternoon_work' }
+    - { hours: [17, 19], demographics: ['professionals', 'corporate'], density: 0.3, reason: 'leaving_work' }
+
+  coffee_shop:
+    - { hours: [7, 10], demographics: ['professionals', 'corporate', 'students'], density: 0.9, reason: 'morning_rush' }
+    - { hours: [10, 15], demographics: ['students', 'freelancers', 'bohemian'], density: 0.6, reason: 'afternoon_lull' }
+    - { hours: [15, 18], demographics: ['students', 'general_public'], density: 0.7, reason: 'afternoon_pickup' }
+    - { hours: [18, 20], demographics: ['general_public', 'bohemian'], density: 0.4, reason: 'evening_quiet' }
+
+  bar:
+    - { hours: [17, 20], demographics: ['professionals', 'corporate', 'working-class'], density: 0.7, reason: 'happy_hour' }
+    - { hours: [20, 2], demographics: ['young_adults', 'students', 'bohemian', 'tourist'], density: 0.9, reason: 'nightlife_peak' } # 8 PM - 2 AM
+    - { hours: [2, 4], demographics: ['young_adults', 'lonely', 'night_owl'], density: 0.3, reason: 'last_call' } # 2 AM - 4 AM
+
+  restaurant:
+    - { hours: [11, 14], demographics: ['professionals', 'general_public', 'tourist'], density: 0.8, reason: 'lunch_rush' }
+    - { hours: [14, 17], demographics: ['general_public', 'tourist'], density: 0.3, reason: 'afternoon_prep' }
+    - { hours: [17, 21], demographics: ['family', 'professionals', 'tourist'], density: 0.7, reason: 'dinner_service' }
+    - { hours: [21, 23], demographics: ['young_adults', 'tourist'], density: 0.5, reason: 'late_dinner' }
+
+  park:
+    - { hours: [6, 9], demographics: ['joggers', 'professionals', 'dog_walkers'], density: 0.4, reason: 'morning_exercise' }
+    - { hours: [9, 16], demographics: ['family', 'elderly', 'tourist', 'students'], density: 0.6, reason: 'daytime_leisure' }
+    - { hours: [16, 19], demographics: ['dog_walkers', 'general_public'], density: 0.5, reason: 'after_work_walk' }
+    - { hours: [19, 6], demographics: ['lonely', 'dangerous', 'night_owl'], density: 0.2, reason: 'night_quiet' } # 7 PM - 6 AM
+
+  gym:
+    - { hours: [6, 9], demographics: ['professionals', 'corporate'], density: 0.8, reason: 'before_work_rush' }
+    - { hours: [9, 17], demographics: ['students', 'freelancers', 'general_public'], density: 0.4, reason: 'daytime_regulars' }
+    - { hours: [17, 21], demographics: ['professionals', 'working-class', 'students'], density: 0.9, reason: 'after_work_peak' }
+    - { hours: [21, 23], demographics: ['night_owl', 'students'], density: 0.3, reason: 'late_night' }
+
+  library:
+    - { hours: [10, 17], demographics: ['students', 'elderly', 'intellectual'], density: 0.5, reason: 'daytime_study' }
+    - { hours: [17, 20], demographics: ['students', 'general_public'], density: 0.3, reason: 'evening_study' }
+
+  subway:
+    - { hours: [6, 10], demographics: ['professionals', 'corporate', 'working-class', 'students'], density: 0.9, reason: 'morning_rush_hour' }
+    - { hours: [10, 16], demographics: ['general_public', 'tourist'], density: 0.5, reason: 'daytime_travel' }
+    - { hours: [16, 19], demographics: ['professionals', 'corporate', 'working-class', 'students'], density: 0.9, reason: 'evening_rush_hour' }
+    - { hours: [19, 1], demographics: ['general_public', 'young_adults', 'tourist'], density: 0.4, reason: 'evening_travel' } # 7 PM - 1 AM
+    - { hours: [1, 6], demographics: ['lonely', 'dangerous', 'night_owl'], density: 0.2, reason: 'late_night_travel' } # 1 AM - 6 AM

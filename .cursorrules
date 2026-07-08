@@ -1,0 +1,30 @@
+﻿# NYC 1999 (nyx99-main) — Cursor agent rules
+
+## Stack
+- **Runtime**: Node.js, **ES modules** (`import`/`export`). Prefer `.js` extensions in imports.
+- **UI**: `blessed` / `blessed-contrib` terminal dashboard — `ui/dashboard.js`. No React in this repo unless added later.
+- **Sim**: `engine/matrix.js`, FSM states under `engine/fsmStates/`, agents under `engine/agent/`.
+- **Data**: YAML + `data/dataLoader.js`; gameplay numbers in `data/balance.js`; env-driven knobs in `data/config.js`.
+
+## Activity / jobs (high-impact invariants)
+- **Tags must match YAML**: Working and similar states resolve activities via `updateCurrentActivity(agent, tag, hour)` in `engine/agent/agentActivity.js`. Tags like `fsm_working_*` must exist on activities in `data/activities.yaml`.
+- **Location filter**: `getValidActivities` only returns activities whose `location_types` includes the agent's **current** node `type` (from `worldGraph.nodes[agent.locationId]`) or `any`. If none match, the agent gets bracket fallbacks like `[working_service]` — extend YAML `location_types` and actions, do not only patch the UI.
+- **Job to tag mapping** lives in `WorkingState.enter()` (`workingTag` + `stateContext.workingTag`). Order branches from **specific** titles to **general**; avoid a single `includes('designer')` catching web/graphic designers unless intentional.
+- **DoActualWork** refreshes flavor via the same `workingTag` — keep it aligned with `enter()`.
+
+## Dashboard / observer mode
+- **No nested `render()`**: `agentList.select()` emits `select item`. If `_suppressSelectEvent` is true (programmatic cycle), the handler must **not** call `render()` again — outer `render()` completes the frame.
+- **Clamp list indices** when `agentsInFocusCache` shrinks vs `autoCycleAgentIdx`; guard `select()` (try/catch is OK).
+- **Observer interval**: derived from `TICK_RATE_MS` in config (wall-clock ~5 min pattern), not `MINUTES_PER_TICK`.
+
+## Editing discipline
+- **Minimal diffs**: Change only what the task requires; no drive-by refactors or unrelated files.
+- **Do not add** README/docs unless the user asks.
+- **Match** existing naming, imports, and comment density in touched files.
+- **Run** checks when reasonable (`node --check`, linters) after substantive JS edits.
+
+## Commands
+- Prefer **running** commands in the project over telling the user to run them when the environment allows.
+
+## Verification hints
+- After FSM or activity YAML changes: confirm new tags exist in `activities.yaml` and that `location_types` covers node types agents actually use for that job.

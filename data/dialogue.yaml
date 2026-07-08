@@ -1,0 +1,164 @@
+# ============================================================================
+# DIALOGUE & PHRASE LIBRARY (1999 NYC)
+# ----------------------------------------------------------------------------
+# Source of Truth for agent speech generation.
+# Grouped by context for the Dialogue System to inject flavor text.
+# ============================================================================
+
+PHRASE_LIBRARY:
+
+  # --- WORK / OFFICE CULTURE ---
+  WORK:
+    - phrase: "I'll circle back on that by end of day."
+      role_map: ['Job', 'Customer']
+      context: "Committing to a follow-up action."
+    - phrase: "Let's take this offline."
+      role_map: ['Job']
+      context: "Suggesting a discussion move out of a meeting."
+    - phrase: "Did you get my fax?"
+      role_map: ['Job', 'Customer']
+      context: "Checking document transmission."
+    - phrase: "I'm swamped this week."
+      role_map: ['Job', 'Friend']
+      context: "Indicating a busy schedule."
+    - phrase: "Let's sync up on Monday."
+      role_map: ['Job']
+      context: "Proposing a meeting."
+    - phrase: "My pager keeps going off."
+      role_map: ['Job', 'Friend']
+      context: "Complaining about interruptions."
+    - phrase: "I need to jump on a conference call."
+      role_map: ['Job', 'Friend']
+      context: "Excusing oneself for work."
+    - phrase: "Is the server down again?"
+      role_map: ['Job']
+      context: "Complaining about IT infrastructure."
+    - phrase: "Let me run this by the boss."
+      role_map: ['Job']
+      context: "Deferring decision to authority."
+
+  # --- SOCIAL / CASUAL ---
+  SOCIAL:
+    - phrase: "What's the plan for tonight?"
+      role_map: ['Friend', 'Family']
+      context: "Planning social activity."
+    - phrase: "I'm totally burned out."
+      role_map: ['Friend', 'Family']
+      context: "Expressing exhaustion."
+    - phrase: "You catch the game last night?"
+      role_map: ['Friend', 'Job']
+      context: "Small talk about sports."
+    - phrase: "Long time no see!"
+      role_map: ['Friend', 'Family']
+      context: "Greeting someone after an absence."
+    - phrase: "Let's grab a slice."
+      role_map: ['Friend', 'Job']
+      context: "Suggesting cheap food (pizza)."
+    - phrase: "I'm running late, be there in 10."
+      role_map: ['Friend', 'Family']
+      context: "Communicating a delay."
+    - phrase: "This place is dead."
+      role_map: ['Friend']
+      context: "Commenting on a boring location."
+    - phrase: "Do you have a light?"
+      role_map: ['Friend', 'stranger']
+      context: "Asking for a lighter/match."
+    - phrase: "Page me later."
+      role_map: ['Friend']
+      context: "Requesting contact via pager."
+
+  # --- NYC TRANSIT & NAVIGATION ---
+  TRANSIT:
+    - phrase: "The subway is delayed again."
+      role_map: ['Friend', 'Job', 'Family']
+      context: "Complaining about public transit."
+    - phrase: "I'm stuck in traffic on the BQE."
+      role_map: ['Friend', 'Job']
+      context: "Explaining delay due to traffic."
+    - phrase: "Meet me at the corner of 14th and 3rd."
+      role_map: ['Friend', 'Family']
+      context: "Setting a specific meeting point."
+    - phrase: "I can't get a cab."
+      role_map: ['Friend', 'Family']
+      context: "Frustration with transport."
+    - phrase: "It's quicker to walk."
+      role_map: ['Friend', 'Family']
+      context: "Suggesting walking over transit."
+    - phrase: "Do you have a subway token?"
+      role_map: ['Friend', 'Stranger']
+      context: "Asking for fare media (pre-MetroCard dominance)."
+    - phrase: "Watch the closing doors."
+      role_map: ['Stranger']
+      context: "Subway etiquette warning."
+
+  # --- RETAIL / SERVICE ---
+  RETAIL:
+    - phrase: "Do you accept credit cards?"
+      role_map: ['Customer']
+      context: "Checking payment methods (cash was king)."
+    - phrase: "Keep the change."
+      role_map: ['Customer']
+      context: "Tipping or convenience."
+    - phrase: "Can I get a receipt?"
+      role_map: ['Customer']
+      context: "Requesting documentation."
+    - phrase: "Where is the fitting room?"
+      role_map: ['Customer']
+      context: "Shopping for clothes."
+    - phrase: "I'm just browsing, thanks."
+      role_map: ['Customer']
+      context: "Politely declining help."
+    - phrase: "Can I get that to go?"
+      role_map: ['Customer']
+      context: "Ordering takeout."
+    - phrase: "How much is this?"
+      role_map: ['Customer']
+      context: "Asking for price."
+
+  # --- COMMUNICATION (PHONE/INTERNET) ---
+  COMMUNICATION:
+    - phrase: "You're breaking up, I'm on my cell."
+      role_map: ['Friend', 'Job', 'Family']
+      context: "Explaining bad signal on early mobile phones."
+    - phrase: "Do you have email?"
+      role_map: ['Job', 'Friend']
+      context: "Asking for digital contact info."
+    - phrase: "I'll shoot you an email."
+      role_map: ['Job', 'Friend']
+      context: "Promising digital follow-up."
+    - phrase: "Get off the phone, I need to use the modem!"
+      role_map: ['Family']
+      context: "Dial-up internet conflict."
+    - phrase: "Did you check your voicemail?"
+      role_map: ['Friend', 'Job']
+      context: "Following up on a message."
+    - phrase: "Call me on my landline."
+      role_map: ['Friend', 'Job']
+      context: "Requesting a clearer connection."
+
+  # --- 1999 SPECIFIC SLANG & CULTURE ---
+  SLANG_1999:
+    - phrase: "That's phat."
+      role_map: ['Friend']
+      context: "Expressing approval (cool/good)."
+    - phrase: "Talk to the hand."
+      role_map: ['Friend', 'Family']
+      context: "Dismissing someone."
+    - phrase: "As if!"
+      role_map: ['Friend']
+      context: "Expressing skepticism."
+    - phrase: "Don't go there."
+      role_map: ['Friend']
+      context: "Warning not to discuss a topic."
+    - phrase: "My bad."
+      role_map: ['Friend', 'Job']
+      context: "Apologizing."
+    - phrase: "Let's bounce."
+      role_map: ['Friend']
+      context: "Suggesting leaving a location."
+    - phrase: "What's the 411?"
+      role_map: ['Friend']
+      context: "Asking for information/gossip."
+    - phrase: "You're buggin'."
+      role_map: ['Friend']
+      context: "Accusing someone of acting crazy."

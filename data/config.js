@@ -1,0 +1,109 @@
+/**
+ * config.js
+ *
+ * System & Engine Configuration.
+ * NOTE: Gameplay balancing numbers (costs, rates, scores) are in data/balance.js
+ */
+
+const getEnv = (key, defaultValue) => process.env[key] || defaultValue;
+
+// --- 1. Core Simulation Loop ---
+export const TICK_RATE_MS = parseInt(getEnv('TICK_RATE_MS', 3000), 10);
+export const UI_RENDER_RATE_MS = parseInt(getEnv('UI_RENDER_RATE_MS', 500), 10);
+export const MINUTES_PER_TICK = parseInt(getEnv('MINUTES_PER_TICK', 15), 10);
+export const INITIAL_AGENTS = parseInt(getEnv('INITIAL_AGENTS', 4000), 10);
+
+// --- 2. Database & Persistence ---
+export const DB_PATH = getEnv('DB_PATH', './nyc_1999.db');
+export const MAX_CHECKPOINTS_TO_KEEP = parseInt(getEnv('MAX_CHECKPOINTS_TO_KEEP', '5'), 10);
+export const SYNC_INTERVAL_TICKS = 15;
+export const CHECKPOINT_INTERVAL_TICKS = 60;
+
+// --- 3. Hard System Limits (Capacities) ---
+export const MAX_HUNGER = 100;
+export const MAX_ENERGY = 100;
+export const MAX_SOCIAL = 100;
+
+export const STARTING_MONEY = 1000;
+export const SOCIAL_FAIL_TICK_LIMIT = 8; // Technical limit for loop prevention
+
+// --- 4. Meta-Simulation Settings ---
+export const METASIM_AGENT_NAMES = ['Neo', 'Trinity', 'Morpheus', 'Agent Smith'];
+
+// --- 5. Simulation Performance Settings ---
+export const LOD2_TICK_INTERVAL = 10; 
+export const LOD2_LOCATION_CHANGE_CHANCE = 0.1;
+
+// --- 6. Lifecycle & Population ---
+export const TARGET_POPULATION = parseInt(getEnv('TARGET_POPULATION', '8000'), 10);
+export const LIFECYCLE_CHECK_INTERVAL_TICKS = 96; // once per sim-day
+export const ENABLE_LIFECYCLE = getEnv('ENABLE_LIFECYCLE', 'true') === 'true';
+
+/** Prune dangling family/social IDs after departures; periodic full-graph scan. */
+export const ENABLE_DEPARTURE_SANITIZER = getEnv('ENABLE_DEPARTURE_SANITIZER', 'true') === 'true';
+export const DEPARTURE_SANITIZER_INTERVAL_TICKS = parseInt(getEnv('DEPARTURE_SANITIZER_INTERVAL_TICKS', '480'), 10);
+
+/** Idle need arbitration: hunger/energy + loneliness + boredom utility. */
+export const ENABLE_ADVANCED_IDLE_SCORING = getEnv('ENABLE_ADVANCED_IDLE_SCORING', 'true') === 'true';
+
+/** Meal/sleep urgency modulation from circadianBias vs clock hour. */
+export const ENABLE_CIRCADIAN_BIAS_SCORING = getEnv('ENABLE_CIRCADIAN_BIAS_SCORING', 'true') === 'true';
+
+/** Log state/workStart histogram periodically (set NYX_ROUTINE_DIAGNOSTICS=1). */
+export const ENABLE_ROUTINE_DIAGNOSTICS = getEnv('NYX_ROUTINE_DIAGNOSTICS', '') === '1';
+export const ROUTINE_DIAGNOSTICS_INTERVAL_TICKS = parseInt(getEnv('ROUTINE_DIAGNOSTICS_INTERVAL_TICKS', '96'), 10);
+
+// --- 7. Debugging & Logging ---
+// These control the "Legacy" thought bubbles. 
+// Note: Deep Sim thoughts (Lizard Brain/Scorer) ignore these and always log on change.
+export const ENABLE_DECISION_THOUGHTS = getEnv('ENABLE_DECISION_THOUGHTS', 'true') === 'true';
+export const LOG_ALL_ACTION_SCORES = getEnv('LOG_ALL_ACTION_SCORES', 'true') === 'true';
+export const LOG_DECISIONS_TO_MEMORY = getEnv('LOG_DECISIONS_TO_MEMORY', 'true') === 'true';
+export const DECISION_MEMORY_SCORE_THRESHOLD = parseInt(getEnv('DECISION_MEMORY_SCORE_THRESHOLD', '70'), 10);
+
+export const ENABLE_TRANSITION_THOUGHTS = getEnv('ENABLE_TRANSITION_THOUGHTS', 'true') === 'true';
+export const LOG_TRANSITIONS_TO_MEMORY = getEnv('LOG_TRANSITIONS_TO_MEMORY', 'true') === 'true';
+export const ENABLE_ACTION_THOUGHTS = getEnv('ENABLE_ACTION_THOUGHTS', 'true') === 'true';
+export const ACTION_THOUGHT_CHANCE = parseFloat(getEnv('ACTION_THOUGHT_CHANCE', '0.01'));
+
+export const ENABLE_NEED_THOUGHTS = getEnv('ENABLE_NEED_THOUGHTS', 'true') === 'true';
+export const NEED_THOUGHT_CHANCE = parseFloat(getEnv('NEED_THOUGHT_CHANCE', '0.005'));
+export const NEED_THOUGHT_STRESS_THRESHOLD = parseInt(getEnv('NEED_THOUGHT_STRESS_THRESHOLD', '80'), 10);
+export const NEED_THOUGHT_MOOD_THRESHOLD = parseInt(getEnv('NEED_THOUGHT_MOOD_THRESHOLD', '10'), 10);
+export const LOG_CRITICAL_NEEDS_TO_MEMORY = getEnv('LOG_CRITICAL_NEEDS_TO_MEMORY', 'true') === 'true';
+
+export const ENABLE_SOCIAL_THOUGHTS = getEnv('ENABLE_SOCIAL_THOUGHTS', 'true') === 'true';
+export const LOG_ALL_SOCIALS_TO_MEMORY = getEnv('LOG_ALL_SOCIALS_TO_MEMORY', 'true') === 'true';
+export const LOG_RELATIONSHIP_MILESTONES = getEnv('LOG_RELATIONSHIP_MILESTONES', 'true') === 'true';
+
+export const ENABLE_TRAVEL_THOUGHTS = getEnv('ENABLE_TRAVEL_THOUGHTS', 'true') === 'true';
+export const LOG_POVERTY_TO_MEMORY = getEnv('LOG_POVERTY_TO_MEMORY', 'true') === 'true';
+
+export const ENABLE_FINANCIAL_THOUGHTS = getEnv('ENABLE_FINANCIAL_THOUGHTS', 'true') === 'true';
+export const LOG_TRANSACTIONS_TO_MEMORY = getEnv('LOG_TRANSACTIONS_TO_MEMORY', 'true') === 'true';
+
+export const DISABLE_ALL_THINKING = getEnv('DISABLE_ALL_THINKING', 'true') === 'true';
+export const DEBUG_AGENT_IDS = getEnv('DEBUG_AGENT_IDS', '').split(',').filter(id => id.length > 0);
+
+/** Set NYX_ENGINE_PROFILE=1 to log periodic hot-path timings (history clone, serialize, queues). */
+export const ENABLE_ENGINE_PROFILE = getEnv('NYX_ENGINE_PROFILE', '') === '1';
+
+/** When false, processQueues skips the setImmediate yield between ticks (slightly higher throughput). */
+export const EVENTBUS_QUEUE_YIELD = getEnv('NYX_EVENTBUS_QUEUE_YIELD', 'true') === 'true';
+
+export function shouldLogThinking(agent, thinkingType = 'general') {
+  if (DISABLE_ALL_THINKING) return false;
+  if (agent.lod !== 1) return false;
+  if (DEBUG_AGENT_IDS.length > 0 && !DEBUG_AGENT_IDS.includes(agent.id)) return false;
+  
+  switch (thinkingType) {
+    case 'decision': return ENABLE_DECISION_THOUGHTS;
+    case 'transition': return ENABLE_TRANSITION_THOUGHTS;
+    case 'action': return ENABLE_ACTION_THOUGHTS;
+    case 'need': return ENABLE_NEED_THOUGHTS;
+    case 'social': return ENABLE_SOCIAL_THOUGHTS;
+    case 'travel': return ENABLE_TRAVEL_THOUGHTS;
+    case 'financial': return ENABLE_FINANCIAL_THOUGHTS;
+    default: return true;
+  }
+}

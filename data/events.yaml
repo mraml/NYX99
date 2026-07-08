@@ -1,0 +1,143 @@
+# ============================================================================
+# EVENTS & DYNAMIC RULES
+# ----------------------------------------------------------------------------
+# Source of Truth for:
+# 1. Random Encounters (things that happen to the player)
+# 2. Dynamic Modifiers (rules that change location availability/quality)
+# ============================================================================
+
+# ============================================================================
+# DYNAMIC AFFORDANCE MODIFIERS
+# ============================================================================
+dynamic_affordance_modifiers:
+  # Business Closure Logic (Day of Week)
+  - type: 'weekend_bar_closure'
+    applies_to_type: 'bar'
+    condition: { day_of_week: [0, 6], hour: [0, 16] } # Sunday, Saturday before 4 PM
+    effect: { open: false, reason: 'Closed for cleaning/prepping after weekend nightlife.' }
+  
+  - type: 'museum_maintenance_monday'
+    applies_to_type: 'museum'
+    condition: { day_of_week: [1] } # Monday
+    effect: { open: false, reason: 'Closed for maintenance on Monday.' }
+
+  # Event-Triggered Modifiers (Temporary)
+  - type: 'construction_blockade'
+    applies_to_type: 'street'
+    effect: { open: false, affordance_penalty: 'all', reason: 'Blocked by construction.' }
+    
+  - type: 'street_fair_boost'
+    applies_to_type: 'street'
+    effect: { open: true, affordance_boost: 'fsm_socializing', boost_amount: 1.5, reason: 'Street fair increases socializing quality.' }
+
+# ============================================================================
+# RANDOM ENCOUNTERS BY LOCATION TYPE
+# ============================================================================
+random_street_events:
+  - { event: 'street performer juggling', frequency: 'common' }
+  - { event: 'someone handing out flyers', frequency: 'very_common' }
+  - { event: 'taxi nearly hits pedestrian', frequency: 'common' }
+  - { event: 'police sirens in distance', frequency: 'very_common' }
+  - { event: 'construction noise and jackhammer', frequency: 'very_common' }
+  - { event: 'homeless person asking for change', frequency: 'very_common' }
+  - { event: 'dog walker with multiple dogs', frequency: 'common' }
+  - { event: 'tourists consulting paper map', frequency: 'common' }
+  - { event: 'someone on cell phone walking fast', frequency: 'common' }
+  - { event: 'delivery guy on bike nearly crashes', frequency: 'common' }
+  - { event: 'garbage truck blocking street', frequency: 'common' }
+  - { event: 'street vendor selling hot dogs', frequency: 'very_common' }
+  - { event: 'someone trying to hail a cab', frequency: 'very_common' }
+  - { event: 'scaffolding everywhere', frequency: 'very_common' }
+  - { event: 'steam rising from manhole', frequency: 'common' }
+  - { event: 'pigeons scattering', frequency: 'very_common' }
+  - { event: 'bodega cat in window', frequency: 'common' }
+  - { event: 'someone walking fast while eating', frequency: 'common' }
+  - { event: 'couple arguing on street corner', frequency: 'uncommon' }
+  - { event: 'mariachi band playing', frequency: 'uncommon' }
+  - { event: 'film crew blocking sidewalk', frequency: 'uncommon' }
+  - { event: 'celebrity sighting', frequency: 'rare' }
+  - { event: 'street fight breaks out', frequency: 'rare' }
+  - { event: 'fire truck racing by', frequency: 'uncommon' }
+  - { event: 'protest march passing through', frequency: 'uncommon' }
+
+random_subway_events:
+  - { event: 'train delays announced', frequency: 'very_common' }
+  - { event: 'crowded train, packed like sardines', frequency: 'very_common' }
+  - { event: 'someone playing music loudly', frequency: 'common' }
+  - { event: 'panhandler making speech', frequency: 'very_common' }
+  - { event: 'showtime dancers performing', frequency: 'common' }
+  - { event: 'someone selling candy', frequency: 'common' }
+  - { event: 'mariachi band in car', frequency: 'uncommon' }
+  - { event: 'someone having mental episode', frequency: 'uncommon' }
+  - { event: 'rats on the tracks', frequency: 'common' }
+  - { event: 'door between cars broken', frequency: 'common' }
+  - { event: 'AC not working in summer', frequency: 'common' }
+  - { event: 'someone eating smelly food', frequency: 'common' }
+  - { event: 'preacher giving sermon', frequency: 'uncommon' }
+  - { event: 'busker playing guitar beautifully', frequency: 'uncommon' }
+  - { event: 'someone passed out drunk', frequency: 'uncommon' }
+  - { event: 'tourists with giant map confused', frequency: 'common' }
+  - { event: 'signal problems, train stuck', frequency: 'common' }
+
+random_bar_events:
+  - { event: 'jukebox playing good song', frequency: 'common' }
+  - { event: 'someone buying round for everyone', frequency: 'uncommon' }
+  - { event: 'bar fight brewing', frequency: 'rare' }
+  - { event: 'celebrating birthday party', frequency: 'common' }
+  - { event: 'arguing over sports game on TV', frequency: 'very_common' }
+  - { event: 'someone hitting on someone else', frequency: 'very_common' }
+  - { event: 'pool game getting competitive', frequency: 'common' }
+  - { event: 'bartender refusing to serve someone', frequency: 'uncommon' }
+  - { event: 'someone crying in corner', frequency: 'uncommon' }
+  - { event: 'bachelor/bachelorette party', frequency: 'common' }
+  - { event: 'someone getting thrown out', frequency: 'uncommon' }
+  - { event: 'regular holding court at bar', frequency: 'common' }
+  - { event: 'someone spills drink everywhere', frequency: 'common' }
+
+# ============================================================================
+# CALENDAR (sim date month/day; UI shows Today / Next within 14 days)
+# ============================================================================
+calendar_events:
+  - { month: 1, day: 1, name: "New Year's Day" }
+  - { month: 1, day: 18, name: "MLK Day (observed)" }
+  - { month: 2, day: 2, name: "Groundhog Day" }
+  - { month: 2, day: 14, name: "Valentine's Day" }
+  - { month: 3, day: 17, name: "St. Patrick's Day" }
+  - { month: 4, day: 1, name: "Opening Day buzz (MLB)" }
+  - { month: 4, day: 15, name: "Tax Day (last-minute lines)" }
+  - { month: 5, day: 1, name: "May Day / labor rallies" }
+  - { month: 5, day: 28, name: "Memorial Day weekend start" }
+  - { month: 6, day: 1, name: "Pride month begins" }
+  - { month: 7, day: 4, name: "Independence Day" }
+  - { month: 9, day: 1, name: "Labor Day / last summer hurrah" }
+  - { month: 10, day: 31, name: "Halloween (village parade build-up)" }
+  - { month: 11, day: 11, name: "Veterans Day" }
+  - { month: 11, day: 25, name: "Thanksgiving" }
+  - { month: 12, day: 24, name: "Christmas Eve" }
+  - { month: 12, day: 25, name: "Christmas Day" }
+  - { month: 12, day: 31, name: "New Year's Eve" }
+
+# Weighted lines for dashboard when no active world_events (higher weight = more common)
+ambient_city_status:
+  - { text: "Subway hum beneath the avenues.", weight: 8 }
+  - { text: "Yellow cabs honking at nothing.", weight: 8 }
+  - { text: "Steam rising from a manhole on a side street.", weight: 7 }
+  - { text: "Someone's car alarm finally stops.", weight: 6 }
+  - { text: "Distant sirens; the city never quite sleeps.", weight: 7 }
+  - { text: "Pigeons own the sidewalk outside a bodega.", weight: 7 }
+  - { text: "Busker case open; a few coins inside.", weight: 6 }
+  - { text: "Delivery bikes weave through traffic.", weight: 8 }
+  - { text: "Office towers glowing against the sky.", weight: 6 }
+  - { text: "Hot dog cart onions on the breeze.", weight: 6 }
+  - { text: "Routine day—millions of stories, none headline.", weight: 1 }
+
+# City-wide incidents (spawned periodically; short duration; description shown in Events)
+world_random_events:
+  - { chance: 0.14, duration_min: 10, duration_max: 32, event: "Film crew blocking a block in SoHo" }
+  - { chance: 0.12, duration_min: 8, duration_max: 24, event: "Street fair spills onto the avenue" }
+  - { chance: 0.1, duration_min: 12, duration_max: 28, event: "UN motorcade snarls Midtown" }
+  - { chance: 0.11, duration_min: 10, duration_max: 26, event: "Concert line wraps around the venue" }
+  - { chance: 0.09, duration_min: 14, duration_max: 30, event: "Water main repair; traffic diverted" }
+  - { chance: 0.1, duration_min: 8, duration_max: 22, event: "Tabloid trucks outside a courthouse" }
+  - { chance: 0.08, duration_min: 12, duration_max: 36, event: "Blackout scare; lights flicker, then hold" }
+  - { chance: 0.09, duration_min: 10, duration_max: 24, event: "Helicopter news hover over Brooklyn" }

@@ -1,0 +1,99 @@
+# ============================================================================
+# WEATHER PATTERNS & ATMOSPHERE
+# ----------------------------------------------------------------------------
+# Source of Truth for weather mechanics and atmospheric descriptions.
+# ============================================================================
+
+weather_patterns:
+  Clear:
+    description: 'Clear and sunny skies.'
+    mood: 'neutral'
+    temp: 0
+    light: 0
+    weight: 20
+  Sunny:
+    description: 'Bright sunshine, blue skies.'
+    mood: 'positive'
+    temp: 2
+    light: 0.2
+    weight: 15
+  Partly Cloudy:
+    description: 'Sun peeking through clouds.'
+    mood: 'neutral'
+    temp: -1
+    light: -0.1
+    weight: 20
+  Overcast:
+    description: 'Grey skies, flat light.'
+    mood: 'gloomy'
+    temp: -2
+    light: -0.3
+    weight: 15
+  Drizzle:
+    description: 'Light, misty rain.'
+    mood: 'gloomy'
+    temp: -2
+    light: -0.3
+    weight: 10
+  Rain:
+    description: 'Steady rainfall.'
+    mood: 'negative'
+    temp: -3
+    light: -0.4
+    weight: 5
+  Thunderstorm:
+    description: 'Heavy rain with thunder and lightning.'
+    mood: 'negative'
+    temp: -4
+    light: -0.6
+    weight: 3
+  Fog:
+    description: 'Thick mist obscuring the view.'
+    mood: 'mysterious'
+    temp: -1
+    light: -0.2
+    weight: 5
+  Muggy:
+    description: 'Hot, humid, and sticky.'
+    mood: 'uncomfortable'
+    temp: 4
+    light: -0.1
+    weight: 3
+  Frigid:
+    description: 'Bitter cold, clear air.'
+    mood: 'uncomfortable'
+    temp: -8
+    light: 0.1
+    weight: 2
+
+# ============================================================================
+# TIME OF DAY ATMOSPHERE
+# ============================================================================
+time_of_day_atmosphere:
+  early_morning: # 5am-8am
+    description: 'Streets quiet, early risers heading to work, bakeries opening, dim light'
+    activities_more_likely: ['commuting to work', 'getting coffee', 'eating breakfast', 'working out']
+  
+  morning: # 8am-12pm
+    description: 'City in full swing, rush hour crowds, office buildings busy, bright daylight'
+    activities_more_likely: ['working', 'shopping', 'running errands', 'getting coffee']
+  
+  afternoon: # 12pm-5pm
+    description: 'Lunch crowds, midday energy, harsh sunlight, tourists out'
+    activities_more_likely: ['eating meal', 'working', 'shopping', 'at park']
+  
+  evening: # 5pm-9pm
+    description: 'Golden hour light, people leaving work, restaurants filling, streets lively'
+    activities_more_likely: ['commuting home', 'eating meal', 'socializing', 'going out', 'relaxing']
+  
+  night: # 9pm-12am
+    description: 'Nightlife active, bars crowded, streetlights glowing, music spilling out'
+    activities_more_likely: ['going out', 'socializing', 'attending concert', 'at bar', 'partying']
+  
+  late_night: # 12am-3am
+    description: 'Only night owls out, 24hr diners busy, empty streets, neon signs'
+    activities_more_likely: ['going out', 'traveling home', 'working late shift', 'partying']
+  
+  very_late: # 3am-5am
+    description: 'Dead quiet, occasional taxi, delivery trucks, harsh streetlight glow'
+    activities_more_likely: ['sleeping', 'working night shift', 'insomnia', 'heading home from party']

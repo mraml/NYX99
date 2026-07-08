@@ -1,0 +1,1130 @@
+# ============================================================================
+# WORLD KNOWLEDGE & PLACES - EXPANDED
+# ----------------------------------------------------------------------------
+# Enhanced with more locations, realistic 1999 NYC atmosphere, and depth
+# ============================================================================
+
+# ============================================================================
+# CONSISTENT NAMED LOCATIONS
+# ============================================================================
+consistent_locations:
+  bar:
+    - "Rudy's Bar"
+    - "White Horse Tavern"
+    - "The Local Pub"
+    - "McSorley's Old Ale House"
+    - "CBGB"
+    - "Mars Bar"
+    - "International Bar"
+    - "O'Flanagan's"
+    - "Ace Bar"
+    - "Hogs & Heifers"
+    - "Joe's Bar"
+    - "Niagara"
+    - "Motor City Bar"
+  
+  restaurant:
+    - "Corner Bistro"
+    - "Joe's Pizza"
+    - "Katz's Deli"
+    - "Generic Diner"
+    - "Veselka"
+    - "Balducci's"
+    - "Second Avenue Deli"
+    - "Lombardi's Pizza"
+    - "Gray's Papaya"
+    - "Eisenberg's Sandwich Shop"
+    - "Yonah Schimmel's"
+    - "Tom's Restaurant"
+    - "Wo Hop"
+    - "Sammy's Roumanian"
+    - "Peter Luger"
+    - "Nobu"
+    - "Union Square Cafe"
+    - "Gramercy Tavern"
+    - "Le Bernardin"
+    - "Neighborhood Trattoria"
+  
+  coffee_shop:
+    - "Starbucks"
+    - "Local Coffee Spot"
+    - "Dunkin Donuts"
+    - "Think Coffee"
+    - "Mudspot"
+    - "Alt.Coffee"
+    - "Café Gitane"
+    - "Café Reggio"
+    - "Hungarian Pastry Shop"
+    - "Café Wha?"
+    - "Internet Café"
+  
+  park:
+    - "Central Park"
+    - "Washington Square Park"
+    - "Local Park"
+    - "Tompkins Square Park"
+    - "Bryant Park"
+    - "Riverside Park"
+    - "Prospect Park"
+    - "McCarren Park"
+    - "Fort Greene Park"
+    - "Stuyvesant Square"
+    - "Madison Square Park"
+    - "Union Square Park"
+  
+  store:
+    - "Local Bodega"
+    - "Grocery Store"
+    - "Pharmacy"
+    - "Gristedes"
+    - "D'Agostino"
+    - "Duane Reade"
+    - "CVS"
+    - "Key Food"
+    - "Associated"
+    - "Corner Deli"
+  
+  venue:
+    - "Knitting Factory"
+    - "Bowery Ballroom"
+    - "Irving Plaza"
+    - "Mercury Lounge"
+    - "The Bitter End"
+    - "S.O.B.'s"
+    - "Webster Hall"
+    - "Roseland Ballroom"
+    - "Beacon Theatre"
+    - "Radio City Music Hall"
+    - "Town Hall"
+    - "Tramps"
+  
+  internet_cafe:
+    - "@Cafe"
+    - "CyberCafe"
+    - "Alt.Coffee"
+    - "The Web Lounge"
+    - "Internet Garage"
+  
+  record_store:
+    - "Tower Records"
+    - "Virgin Megastore"
+    - "Other Music"
+    - "Kim's Underground"
+    - "Generation Records"
+    - "Bleecker Street Records"
+    - "J&R Music World"
+    - "Rocks In Your Head"
+  
+  video_store:
+    - "Blockbuster Video"
+    - "Hollywood Video"
+    - "Kim's Video"
+    - "World of Video"
+    - "Neighborhood Video"
+  
+  bookstore:
+    - "Barnes & Noble"
+    - "The Strand Bookstore"
+    - "St. Mark's Bookshop"
+    - "Shakespeare & Co."
+    - "Three Lives & Company"
+    - "Rizzoli"
+    - 'Coliseum Books'
+    - 'Biography Bookshop'
+  
+  gym:
+    - "Crunch Fitness"
+    - "New York Sports Club"
+    - "Gold's Gym"
+    - "24 Hour Fitness"
+    - "Local Gym"
+    - "YMCA"
+    - "Bally Total Fitness"
+  
+  movie_theater:
+    - "Loews Theatre"
+    - "AMC Theater"
+    - "Angelika Film Center"
+    - "Film Forum"
+    - "Cinema Village"
+    - "IFC Center"
+    - "Landmark Sunshine"
+    - "Ziegfeld Theatre"
+    - "Paris Theatre"
+  
+  arcade:
+    - "Chinatown Fair"
+    - "Broadway Arcade"
+    - "Dave & Buster's"
+    - "Time Square Arcade"
+    - "Local Arcade"
+  
+  comic_shop:
+    - "Forbidden Planet"
+    - "Midtown Comics"
+    - "Jim Hanley's Universe"
+    - "St. Mark's Comics"
+    - "Cosmic Comics"
+  
+  laundromat:
+    - "Wash & Fold"
+    - "Suds 'N' Duds"
+    - "Neighborhood Laundromat"
+    - "24 Hour Laundry"
+    - "Soap Opera Laundromat"
+
+# ============================================================================
+# SUB-LOCATIONS WITHIN LOCATION TYPES
+# ============================================================================
+places:
+  home: 
+    - 'bedroom'
+    - 'kitchen'
+    - 'living room'
+    - 'bathroom'
+    - 'couch'
+    - 'desktop computer'
+    - 'window'
+    - 'bed'
+    - 'kitchen table'
+    - 'sink'
+    - 'doorway'
+    - 'fire escape'
+    - 'closet'
+    - 'TV'
+    - 'refrigerator'
+    - 'phone'
+    - 'desk'
+  
+  office: 
+    - 'desk'
+    - 'conference room'
+    - 'break room'
+    - 'water cooler'
+    - 'cubicle'
+    - "boss's office"
+    - 'printer'
+    - 'fax machine'
+    - 'copy room'
+    - 'supply closet'
+    - 'lobby'
+    - 'elevator'
+    - 'restroom'
+    - 'parking garage'
+  
+  bar: 
+    - 'bar counter'
+    - 'pool table'
+    - 'booth'
+    - 'dart board'
+    - 'dance floor'
+    - 'restroom'
+    - 'bar stool'
+    - 'jukebox'
+    - 'back room'
+    - 'sidewalk outside'
+    - 'cigarette machine'
+    - 'arcade cabinet'
+    - 'ATM'
+  
+  restaurant: 
+    - 'table'
+    - 'booth'
+    - 'bar seating'
+    - 'kitchen door'
+    - 'waiting area'
+    - 'host stand'
+    - 'patio'
+    - 'restroom'
+    - 'coat check'
+  
+  subway: 
+    - 'platform'
+    - 'train car'
+    - 'bench'
+    - 'ticket machine'
+    - 'turnstile'
+    - 'map display'
+    - 'token booth'
+    - 'stairs'
+    - 'emergency exit'
+    - 'MetroCard machine'
+  
+  gym: 
+    - 'treadmill'
+    - 'weight area'
+    - 'locker room'
+    - 'yoga studio'
+    - 'water fountain'
+    - 'elliptical machine'
+    - 'free weights section'
+    - 'stretching area'
+    - 'StairMaster'
+    - 'front desk'
+    - 'sauna'
+  
+  store: 
+    - 'aisle'
+    - 'checkout'
+    - 'deli counter'
+    - 'frozen foods'
+    - 'entrance'
+    - 'shopping cart'
+    - 'magazine rack'
+    - 'produce section'
+    - 'dairy section'
+    - 'customer service'
+    - 'ATM'
+  
+  street: 
+    - 'sidewalk'
+    - 'corner'
+    - 'crosswalk'
+    - 'bus stop'
+    - 'alley entrance'
+    - 'storefront'
+    - 'manhole cover'
+    - 'newsstand'
+    - 'payphone'
+    - 'fire hydrant'
+    - 'subway entrance'
+    - 'parking meter'
+    - 'scaffolding'
+    - 'stoop'
+    - 'dumpster'
+  
+  park: 
+    - 'path'
+    - 'bench'
+    - 'fountain'
+    - 'playground'
+    - 'dog run'
+    - 'basketball court'
+    - 'quiet lawn'
+    - 'chess table'
+    - 'picnic area'
+    - 'pond'
+    - 'statue'
+    - 'public restroom'
+    - 'water fountain'
+  
+  coffee_shop: 
+    - 'counter'
+    - 'small table'
+    - 'comfy chair'
+    - 'pastry display'
+    - 'ordering line'
+    - 'espresso machine'
+    - 'window seat'
+    - 'community board'
+    - 'restroom'
+  
+  movie_theater: 
+    - 'lobby'
+    - 'concession stand'
+    - 'theater seat'
+    - 'arcade cabinet'
+    - 'restroom'
+    - 'ticket booth'
+    - 'poster display'
+    - 'exit door'
+  
+  bookstore: 
+    - 'cafe'
+    - 'fiction aisle'
+    - 'checkout counter'
+    - 'info desk'
+    - 'reading chair'
+    - 'new releases display'
+    - 'bargain books'
+    - 'magazine section'
+    - 'upstairs loft'
+  
+  arcade: 
+    - 'pinball machines'
+    - 'Street Fighter II cabinet'
+    - 'token counter'
+    - 'skeeball lane'
+    - 'prize counter'
+    - 'Pac-Man machine'
+    - 'racing game'
+    - 'shooting game'
+    - 'fighting game section'
+  
+  police_station: 
+    - 'front desk'
+    - 'holding cell'
+    - 'interrogation room'
+    - 'waiting bench'
+    - 'evidence locker'
+    - 'booking area'
+    - "detective's desk"
+  
+  jail: 
+    - 'cot'
+    - 'toilet'
+    - 'metal bars'
+    - 'common area'
+    - 'visitation room phone'
+    - 'cafeteria'
+    - 'yard'
+  
+  museum: 
+    - 'exhibit hall'
+    - 'cafe'
+    - 'gift shop'
+    - 'entrance lobby'
+    - 'special exhibit display'
+    - 'information desk'
+    - 'sculpture garden'
+    - 'coat check'
+    - 'member lounge'
+  
+  library: 
+    - 'reading room'
+    - 'computer terminal'
+    - 'checkout desk'
+    - 'stacks'
+    - 'quiet corner'
+    - 'microfiche reader'
+    - 'reference desk'
+    - 'study carrel'
+    - "children's section"
+    - 'periodicals'
+  
+  venue: 
+    - 'stage'
+    - 'bar area'
+    - 'backstage'
+    - 'dance floor'
+    - 'merch table'
+    - 'sound booth'
+    - 'balcony'
+    - 'coat check'
+    - 'smoking area outside'
+    - 'VIP section'
+  
+  internet_cafe: 
+    - 'computer station'
+    - 'front counter'
+    - 'snack area'
+    - 'printer'
+    - 'booth'
+    - 'main floor'
+    - 'private room'
+  
+  record_store:
+    - 'new releases'
+    - 'vinyl bins'
+    - 'CD racks'
+    - 'listening station'
+    - 'checkout counter'
+    - 'posters wall'
+    - 'used section'
+    - 'import section'
+    - 'staff picks'
+  
+  video_store:
+    - 'renting video'
+    - 'browsing'
+    - 'socializing'
+  
+  laundromat:
+    - 'doing laundry'
+    - 'reading'
+    - 'people watching'
+  
+  hospital:
+    - 'emergency room'
+    - 'waiting room'
+    - 'patient room'
+    - 'nurse station'
+    - 'cafeteria'
+    - 'lobby'
+    - 'elevator'
+    - 'ICU'
+    - 'radiology'
+  
+  clinic:
+    - 'waiting room'
+    - 'exam room'
+    - 'reception desk'
+    - 'lab'
+    - 'pharmacy'
+  
+  salon:
+    - 'styling chair'
+    - 'shampoo station'
+    - 'waiting area'
+    - 'nail station'
+    - 'front desk'
+  
+  bank:
+    - 'teller window'
+    - 'ATM vestibule'
+    - 'loan officer desk'
+    - 'safe deposit area'
+    - 'rope line'
+  
+  school:
+    - 'classroom'
+    - 'hallway'
+    - 'cafeteria'
+    - 'gymnasium'
+    - 'library'
+    - "principal's office"
+    - "teacher's lounge"
+    - 'auditorium'
+  
+  church:
+    - 'pew'
+    - 'altar'
+    - 'entrance'
+    - 'basement'
+    - 'parking lot'
+    - 'fellowship hall'
+  
+  mall:
+    - 'food court'
+    - 'central atrium'
+    - 'store entrance'
+    - 'restrooms'
+    - 'directory'
+    - 'parking garage'
+  
+  comic_shop:
+    - 'new comics wall'
+    - 'back issue bins'
+    - 'graphic novels shelf'
+    - 'counter'
+    - 'gaming table'
+    - 'action figures display'
+  
+  theater:
+    - 'stage'
+    - 'orchestra seats'
+    - 'balcony'
+    - 'lobby'
+    - 'box office'
+    - 'backstage'
+  
+  studio:
+    - 'main floor'
+    - 'mirror wall'
+    - 'equipment storage'
+    - 'reception'
+    - 'changing room'
+  
+  garage:
+    - 'work bay'
+    - 'tool bench'
+    - 'waiting area'
+    - 'office'
+    - 'parking lot'
+  
+  alley:
+    - 'dumpster'
+    - 'fire escape'
+    - 'back door'
+    - 'loading dock'
+    - 'shadowy corner'
+
+# ============================================================================
+# DISCOVERABLE ACTIVITIES BY LOCATION
+# ============================================================================
+discoverable_activities:
+  home: 
+    - 'use internet'
+    - 'talking on phone'
+    - 'cleaning home'
+    - 'relaxing'
+    - 'reading book'
+    - 'watching tv'
+    - 'playing video games'
+    - 'cooking'
+    - 'listening to music'
+    - 'napping'
+    - 'doing laundry'
+  
+  office: 
+    - 'getting snacks'
+    - 'gossiping'
+    - 'checking email'
+    - 'taking break'
+  
+  bar: 
+    - 'socializing'
+    - 'playing pool'
+    - 'play arcade game'
+    - 'going out'
+    - 'watching sports'
+    - 'playing darts'
+    - 'smoking cigarette'
+    - 'flirting'
+  
+  restaurant: 
+    - 'socializing'
+    - 'eating meal'
+    - 'going out'
+    - 'meeting friend'
+    - 'going on date'
+  
+  gym: 
+    - 'working out'
+    - 'taking class'
+    - 'socializing'
+  
+  store: 
+    - 'shopping'
+    - 'getting snacks'
+    - 'running errands'
+  
+  park: 
+    - 'at park'
+    - 'taking walk'
+    - 'working out'
+    - 'socializing'
+    - 'reading book'
+    - 'walking dog'
+    - 'playing sports'
+    - 'people watching'
+  
+  coffee_shop: 
+    - 'get coffee'
+    - 'socializing'
+    - 'relaxing'
+    - 'reading book'
+    - 'studying'
+    - 'meeting friend'
+    - 'people watching'
+  
+  movie_theater: 
+    - 'watch movie'
+    - 'play arcade game'
+    - 'going on date'
+  
+  bookstore: 
+    - 'browse books'
+    - 'reading book'
+    - 'get coffee'
+    - 'socializing'
+  
+  arcade: 
+    - 'play arcade game'
+    - 'socializing'
+    - 'hanging out'
+  
+  library: 
+    - 'visit library'
+    - 'browse books'
+    - 'reading book'
+    - 'use internet'
+    - 'studying'
+  
+  museum: 
+    - 'visit museum'
+    - 'taking date'
+    - 'relaxing'
+  
+  venue: 
+    - 'go to venue'
+    - 'socializing'
+    - 'attending concert'
+    - 'dancing'
+  
+  internet_cafe: 
+    - 'use internet'
+    - 'get coffee'
+    - 'checking email'
+    - 'socializing'
+  
+  record_store:
+    - 'record shopping'
+    - 'browsing'
+    - 'socializing'
+    - 'listening to music'
+  
+  video_store:
+    - 'renting video'
+    - 'browsing'
+    - 'socializing'
+  
+  laundromat:
+    - 'doing laundry'
+    - 'reading'
+    - 'people watching'
+  
+  street:
+    - 'taking walk'
+    - 'traveling'
+    - 'people watching'
+    - 'smoking cigarette'
+    - 'using payphone'
+    - 'window shopping'
+  
+  subway:
+    - 'traveling'
+    - 'reading'
+    - 'people watching'
+  
+  hospital:
+    - 'in hospital'
+    - 'seeing doctor'
+    - 'visiting patient'
+  
+  clinic:
+    - 'seeing doctor'
+    - 'at dentist'
+    - 'waiting'
+  
+  salon:
+    - 'getting haircut'
+    - 'socializing'
+  
+  bank:
+    - 'banking'
+    - 'waiting in line'
+  
+  theater:
+    - 'attending theater'
+    - 'watching performance'
+  
+  comic_shop:
+    - 'comic book shopping'
+    - 'socializing'
+    - 'gaming'
+
+# ============================================================================
+# DYNAMIC AFFORDANCE MODIFIERS (NEW)
+# ============================================================================
+dynamic_affordance_modifiers:
+  # Business Closure Logic (Day of Week)
+  - type: 'weekend_bar_closure'
+    applies_to_type: 'bar'
+    condition: { day_of_week: [0, 6], hour: [0, 16] } # Sunday, Saturday before 4 PM
+    effect: { open: false, reason: 'Closed for cleaning/prepping after weekend nightlife.' }
+  
+  - type: 'museum_maintenance_monday'
+    applies_to_type: 'museum'
+    condition: { day_of_week: [1] } # Monday
+    effect: { open: false, reason: 'Closed for maintenance on Monday.' }
+
+  # Event-Triggered Modifiers (Temporary)
+  - type: 'construction_blockade'
+    applies_to_type: 'street'
+    # NOTE: This modifier requires a specific location key (e.g., 'CONSTR-SOHO') 
+    # to be set by the Matrix.
+    effect: { open: false, affordance_penalty: 'all', reason: 'Blocked by construction.' }
+    
+  - type: 'street_fair_boost'
+    applies_to_type: 'street'
+    effect: { open: true, affordance_boost: 'fsm_socializing', boost_amount: 1.5, reason: 'Street fair increases socializing quality.' }
+
+
+# ============================================================================
+# WEATHER & TIME-BASED ATMOSPHERE
+# ============================================================================
+weather_conditions:
+  - { weather: 'Clear and sunny', mood: 'uplifting', weight: 0.20 }
+  - { weather: 'Partly cloudy', mood: 'neutral', weight: 0.25 }
+  - { weather: 'Overcast', mood: 'gloomy', weight: 0.15 }
+  - { weather: 'Light rain', mood: 'cozy', weight: 0.12 }
+  - { weather: 'Heavy rain', mood: 'dreary', weight: 0.08 }
+  - { weather: 'Drizzle', mood: 'melancholy', weight: 0.10 }
+  - { weather: 'Fog', mood: 'mysterious', weight: 0.05 }
+  - { weather: 'Snow', mood: 'peaceful', weight: 0.03 }
+  - { weather: 'Hot and humid', mood: 'oppressive', weight: 0.02 }
+
+time_of_day_atmosphere:
+  early_morning: # 5am-8am
+    description: 'Streets quiet, early risers heading to work, bakeries opening, dim light'
+    activities_more_likely: ['commuting to work', 'getting coffee', 'eating breakfast', 'working out']
+  
+  morning: # 8am-12pm
+    description: 'City in full swing, rush hour crowds, office buildings busy, bright daylight'
+    activities_more_likely: ['working', 'shopping', 'running errands', 'getting coffee']
+  
+  afternoon: # 12pm-5pm
+    description: 'Lunch crowds, midday energy, harsh sunlight, tourists out'
+    activities_more_likely: ['eating meal', 'working', 'shopping', 'at park']
+  
+  evening: # 5pm-9pm
+    description: 'Golden hour light, people leaving work, restaurants filling, streets lively'
+    activities_more_likely: ['commuting home', 'eating meal', 'socializing', 'going out', 'relaxing']
+  
+  night: # 9pm-12am
+    description: 'Nightlife active, bars crowded, streetlights glowing, music spilling out'
+    activities_more_likely: ['going out', 'socializing', 'attending concert', 'at bar', 'partying']
+  
+  late_night: # 12am-3am
+    description: 'Only night owls out, 24hr diners busy, empty streets, neon signs'
+    activities_more_likely: ['going out', 'traveling home', 'working late shift', 'partying']
+  
+  very_late: # 3am-5am
+    description: 'Dead quiet, occasional taxi, delivery trucks, harsh streetlight glow'
+    activities_more_likely: ['sleeping', 'working night shift', 'insomnia', 'heading home from party']
+
+# ============================================================================
+# SOCIAL DATA (Topics, Gossip)
+# ============================================================================
+conversation_topics:
+  # 1999 Current Events
+  - { topic: 'Y2K', interest_tags: ['technology', 'politics'], relevance: 'very_high' }
+  - { topic: 'the Dot-com bubble', interest_tags: ['finance', 'technology', 'politics'], relevance: 'very_high' }
+  - { topic: 'the new Star Wars prequel', interest_tags: ['movies', 'comics'], relevance: 'very_high' }
+  - { topic: 'The Matrix', interest_tags: ['movies', 'technology'], relevance: 'very_high' }
+  - { topic: 'who killed JFK Jr.', interest_tags: ['politics'], relevance: 'high' }
+  - { topic: "Bill Clinton's impeachment", interest_tags: ['politics'], relevance: 'high' }
+  - { topic: 'Columbine shooting', interest_tags: ['politics', 'news'], relevance: 'high' }
+  - { topic: 'Kosovo War', interest_tags: ['politics', 'news'], relevance: 'medium' }
+  - { topic: 'Euro currency launch', interest_tags: ['finance', 'politics'], relevance: 'medium' }
+  
+  # Technology
+  - { topic: 'their new pager', interest_tags: ['technology'], relevance: 'high' }
+  - { topic: 'Napster', interest_tags: ['music', 'technology'], relevance: 'very_high' }
+  - { topic: 'getting AOL', interest_tags: ['technology'], relevance: 'high' }
+  - { topic: 'MP3 players', interest_tags: ['technology', 'music'], relevance: 'medium' }
+  - { topic: 'Internet stocks', interest_tags: ['finance', 'technology'], relevance: 'very_high' }
+  - { topic: 'how slow dial-up is', interest_tags: ['technology'], relevance: 'high' }
+  - { topic: 'DVD vs VHS', interest_tags: ['technology', 'movies'], relevance: 'medium' }
+  
+  # Pop Culture
+  - { topic: 'Britney Spears', interest_tags: ['music'], relevance: 'very_high' }
+  - { topic: 'The Sopranos', interest_tags: ['tv'], relevance: 'very_high' }
+  - { topic: 'Sex and the City', interest_tags: ['tv', 'fashion'], relevance: 'high' }
+  - { topic: 'who shot Mr. Burns', interest_tags: ['tv'], relevance: 'medium' }
+  - { topic: 'Seinfeld finale', interest_tags: ['tv'], relevance: 'medium' }
+  - { topic: 'WWE wrestling', interest_tags: ['sports', 'tv'], relevance: 'high' }
+  - { topic: 'Eminem controversy', interest_tags: ['music', 'politics'], relevance: 'high' }
+  - { topic: 'boy bands vs real music', interest_tags: ['music'], relevance: 'high' }
+  
+  # Sports
+  - { topic: 'the Knicks game', interest_tags: ['sports'], relevance: 'high' }
+  - { topic: 'the Yankees dynasty', interest_tags: ['sports'], relevance: 'very_high' }
+  - { topic: 'Mets playoff run', interest_tags: ['sports'], relevance: 'medium' }
+  - { topic: 'Rangers season', interest_tags: ['sports'], relevance: 'medium' }
+  
+  # Local/Daily Life
+  - { topic: 'the stock market', interest_tags: ['finance'], relevance: 'high' }
+  - { topic: 'a new restaurant', interest_tags: ['food'], relevance: 'medium' }
+  - { topic: 'the weather', interest_tags: ['small_talk'], relevance: 'very_high' }
+  - { topic: 'their job', interest_tags: ['work', 'small_talk'], relevance: 'very_high' }
+  - { topic: 'rent prices', interest_tags: ['finance', 'small_talk'], relevance: 'very_high' }
+  - { topic: 'the subway', interest_tags: ['small_talk'], relevance: 'very_high' }
+  - { topic: "Giuliani's policies", interest_tags: ['politics'], relevance: 'high' }
+  - { topic: 'gentrification', interest_tags: ['politics', 'real_estate'], relevance: 'high' }
+  - { topic: 'Times Square cleanup', interest_tags: ['politics', 'local'], relevance: 'medium' }
+  
+  # Misc Cultural
+  - { topic: 'their Tamagotchi', interest_tags: ['games'], relevance: 'medium' }
+  - { topic: 'Beanie Babies values', interest_tags: ['collecting'], relevance: 'low' }
+  - { topic: 'Pokemon craze', interest_tags: ['games', 'kids'], relevance: 'medium' }
+  - { topic: 'The Blair Witch Project', interest_tags: ['movies'], relevance: 'high' }
+  - { topic: 'Fight Club ending', interest_tags: ['movies'], relevance: 'high' }
+  - { topic: "Woodstock '99 riots", interest_tags: ['music', 'news'], relevance: 'medium' }
+
+gossip_templates:
+  - "Did you hear that {SUBJECT_NAME} {GOSSIP_VERB}?"
+  - "I heard {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}!"
+  - "Can you believe {SUBJECT_NAME} {GOSSIP_VERB}?"
+  - "Everyone is saying that {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}..."
+  - "Honestly, I think {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}."
+  - "Don't tell anyone, but {SUBJECT_NAME} {GOSSIP_VERB}!"
+  - "Apparently {SUBJECT_NAME} was seen {GOSSIP_VERB}."
+  - "So I heard through the grapevine that {SUBJECT_NAME} {GOSSIP_VERB}."
+  - "You didn't hear this from me, but {SUBJECT_NAME} {GOSSIP_VERB}."
+  - "Word on the street is {SUBJECT_NAME} is {GOSSIP_ADJECTIVE}."
+
+gossip_verbs:
+  - "cheating on their partner"
+  - "getting fired soon"
+  - "secretly rich"
+  - "lying about their job"
+  - "moving to another city"
+  - "going to rehab"
+  - "getting divorced"
+  - "having an affair with a coworker"
+  - "got arrested last week"
+  - "won the lottery"
+  - "lost all their money in stocks"
+  - "sleeping with their boss"
+  - "getting evicted"
+  - "in huge debt"
+  - "going back to school"
+  - "starting their own company"
+  - "got someone pregnant"
+  - "dealing drugs"
+  - "went to the same party as a celebrity"
+  - "hooking up with their ex again"
+
+gossip_adjectives:
+  - "a total fraud"
+  - "really nice, actually"
+  - "kind of a jerk"
+  - "secretly dating the boss"
+  - "in a lot of trouble"
+  - "about to get promoted"
+  - "moving to LA"
+  - "broke as hell"
+  - "secretly loaded"
+  - "having a mental breakdown"
+  - "getting back with their ex"
+  - "seeing someone new"
+  - "up to something shady"
+  - "doing really well these days"
+  - "spiraling out of control"
+
+# ============================================================================
+# RANDOM EVENTS & ENCOUNTERS
+# ============================================================================
+random_street_events:
+  - { event: 'street performer juggling', frequency: 'common' }
+  - { event: 'someone handing out flyers', frequency: 'very_common' }
+  - { event: 'taxi nearly hits pedestrian', frequency: 'common' }
+  - { event: 'police sirens in distance', frequency: 'very_common' }
+  - { event: 'construction noise and jackhammer', frequency: 'very_common' }
+  - { event: 'homeless person asking for change', frequency: 'very_common' }
+  - { event: 'dog walker with multiple dogs', frequency: 'common' }
+  - { event: 'tourists consulting paper map', frequency: 'common' }
+  - { event: 'someone on cell phone walking fast', frequency: 'common' }
+  - { event: 'delivery guy on bike nearly crashes', frequency: 'common' }
+  - { event: 'garbage truck blocking street', frequency: 'common' }
+  - { event: 'street vendor selling hot dogs', frequency: 'very_common' }
+  - { event: 'someone trying to hail a cab', frequency: 'very_common' }
+  - { event: 'scaffolding everywhere', frequency: 'very_common' }
+  - { event: 'steam rising from manhole', frequency: 'common' }
+  - { event: 'pigeons scattering', frequency: 'very_common' }
+  - { event: 'bodega cat in window', frequency: 'common' }
+  - { event: 'someone walking fast while eating', frequency: 'common' }
+  - { event: 'couple arguing on street corner', frequency: 'uncommon' }
+  - { event: 'mariachi band playing', frequency: 'uncommon' }
+  - { event: 'film crew blocking sidewalk', frequency: 'uncommon' }
+  - { event: 'celebrity sighting', frequency: 'rare' }
+  - { event: 'street fight breaks out', frequency: 'rare' }
+  - { event: 'fire truck racing by', frequency: 'uncommon' }
+  - { event: 'protest march passing through', frequency: 'uncommon' }
+
+random_subway_events:
+  - { event: 'train delays announced', frequency: 'very_common' }
+  - { event: 'crowded train, packed like sardines', frequency: 'very_common' }
+  - { event: 'someone playing music loudly', frequency: 'common' }
+  - { event: 'panhandler making speech', frequency: 'very_common' }
+  - { event: 'showtime dancers performing', frequency: 'common' }
+  - { event: 'someone selling candy', frequency: 'common' }
+  - { event: 'mariachi band in car', frequency: 'uncommon' }
+  - { event: 'someone having mental episode', frequency: 'uncommon' }
+  - { event: 'rats on the tracks', frequency: 'common' }
+  - { event: 'door between cars broken', frequency: 'common' }
+  - { event: 'AC not working in summer', frequency: 'common' }
+  - { event: 'someone eating smelly food', frequency: 'common' }
+  - { event: 'preacher giving sermon', frequency: 'uncommon' }
+  - { event: 'busker playing guitar beautifully', frequency: 'uncommon' }
+  - { event: 'someone passed out drunk', frequency: 'uncommon' }
+  - { event: 'tourists with giant map confused', frequency: 'common' }
+  - { event: 'signal problems, train stuck', frequency: 'common' }
+
+random_bar_events:
+  - { event: 'jukebox playing good song', frequency: 'common' }
+  - { event: 'someone buying round for everyone', frequency: 'uncommon' }
+  - { event: 'bar fight brewing', frequency: 'rare' }
+  - { event: 'celebrating birthday party', frequency: 'common' }
+  - { event: 'arguing over sports game on TV', frequency: 'very_common' }
+  - { event: 'someone hitting on someone else', frequency: 'very_common' }
+  - { event: 'pool game getting competitive', frequency: 'common' }
+  - { event: 'bartender refusing to serve someone', frequency: 'uncommon' }
+  - { event: 'someone crying in corner', frequency: 'uncommon' }
+  - { event: 'bachelor/bachelorette party', frequency: 'common' }
+  - { event: 'someone getting thrown out', frequency: 'uncommon' }
+  - { event: 'regular holding court at bar', frequency: 'common' }
+  - { event: 'someone spills drink everywhere', frequency: 'common' }
+
+# ============================================================================
+# PRICES & ECONOMICS (1999 NYC)
+# ============================================================================
+typical_prices:
+  # Food & Drink
+  - { item: 'Dollar pizza slice', price: 1.00 }
+  - { item: 'Pizza slice (regular)', price: [1.50, 2.50] }
+  - { item: 'Hot dog from cart', price: 1.50 }
+  - { item: 'Coffee (deli)', price: [0.75, 1.25] }
+  - { item: 'Coffee (Starbucks)', price: [2.50, 4.00] }
+  - { item: 'Bagel with cream cheese', price: [1.50, 2.50] }
+  - { item: 'Deli sandwich', price: [4.00, 6.00] }
+  - { item: 'Diner breakfast', price: [5.00, 8.00] }
+  - { item: 'Fast food meal', price: [4.00, 6.00] }
+  - { item: 'Casual restaurant meal', price: [12.00, 25.00] }
+  - { item: 'Nice restaurant dinner', price: [40.00, 80.00] }
+  - { item: 'Beer at bar', price: [3.00, 5.00] }
+  - { item: 'Well drink', price: [4.00, 6.00] }
+  - { item: 'Cocktail (nice place)', price: [8.00, 12.00] }
+  
+  # Entertainment
+  - { item: 'Movie ticket', price: [8.50, 10.00] }
+  - { item: 'Video rental', price: [3.00, 4.00] }
+  - { item: 'CD', price: [12.99, 16.99] }
+  - { item: 'Concert ticket (club)', price: [10.00, 25.00] }
+  - { item: 'Concert ticket (arena)', price: [40.00, 100.00] }
+  - { item: 'Broadway show', price: [60.00, 100.00] }
+  - { item: 'Museum admission', price: [8.00, 12.00] }
+  - { item: 'Comic book', price: [1.99, 2.99] }
+  - { item: 'Paperback book', price: [6.99, 9.99] }
+  - { item: 'Magazine', price: [3.50, 5.00] }
+  
+  # Transportation
+  - { item: 'Subway token', price: 1.50 }
+  - { item: 'Taxi ride (short)', price: [5.00, 10.00] }
+  - { item: 'Taxi ride (long)', price: [15.00, 30.00] }
+  
+  # Services
+  - { item: 'Haircut (basic)', price: [10.00, 25.00] }
+  - { item: 'Haircut (nice salon)', price: [40.00, 80.00] }
+  - { item: 'Gym membership (monthly)', price: [40.00, 80.00] }
+  - { item: 'Internet cafe (per hour)', price: [5.00, 10.00] }
+  - { item: 'Laundromat (per load)', price: [1.50, 2.50] }
+  
+  # Technology
+  - { item: 'Pager', price: [50.00, 100.00] }
+  - { item: 'Cell phone', price: [100.00, 300.00] }
+  - { item: 'Desktop computer', price: [1000.00, 2500.00] }
+  - { item: 'Laptop computer', price: [1500.00, 3000.00] }
+  - { item: 'VCR', price: [100.00, 200.00] }
+  - { item: 'DVD player', price: [300.00, 500.00] }
+  - { item: 'PlayStation', price: 99.00 }
+  - { item: 'Nintendo 64', price: 99.00 }
+  - { item: 'Video game', price: [39.99, 49.99] }
+  - { item: 'Discman', price: [50.00, 150.00] }
+
+# ============================================================================
+# SMELLS, SOUNDS, & SENSORY DETAILS
+# ============================================================================
+nyc_smells:
+  street:
+    - 'hot asphalt and exhaust fumes'
+    - 'hot dog cart with onions'
+    - 'garbage on hot day'
+    - 'fresh pretzels'
+    - 'subway steam and tar'
+    - 'roasting chestnuts in winter'
+    - 'pizza from open door'
+    - "someone's perfume/cologne"
+    - 'cigarette smoke'
+    - 'rain on concrete'
+    - 'bakery exhaust vent'
+    - 'fish market'
+  
+  subway:
+    - 'stale air and brake dust'
+    - 'urine and cleaning solution'
+    - "someone's fast food"
+    - "homeless person's body odor"
+    - 'perfume overload in crowded car'
+    - 'electrical burning smell'
+    - 'wet cement'
+  
+  bar:
+    - 'spilled beer and cigarettes'
+    - 'stale smoke absorbed in everything'
+    - 'cheap cologne and desperation'
+    - 'popcorn from machine'
+    - 'urinal cakes from bathroom'
+  
+  coffee_shop:
+    - 'fresh ground coffee beans'
+    - 'steamed milk'
+    - 'pastries baking'
+    - 'old books and paper'
+  
+  home:
+    - 'someone cooking in another apartment'
+    - 'radiator heat and dust'
+    - 'old building mustiness'
+    - 'cleaning products'
+    - "neighbor's cigarette smoke"
+  
+  restaurant:
+    - 'garlic and olive oil'
+    - 'fresh bread'
+    - 'grilling meat'
+    - 'spices and seasonings'
+
+nyc_sounds:
+  street:
+    - 'car horns honking constantly'
+    - 'jackhammer from construction'
+    - 'police siren wailing past'
+    - 'ambulance racing through'
+    - 'bus brakes hissing'
+    - 'taxi dispatch radio crackling'
+    - 'people yelling in various languages'
+    - 'street performer playing music'
+    - 'skateboard wheels on pavement'
+    - 'pigeons cooing and flapping'
+    - 'steam hissing from manhole'
+    - 'car alarms going off'
+  
+  subway:
+    - 'train screeching into station'
+    - 'automated "stand clear of closing doors"'
+    - 'busker playing saxophone'
+    - 'token booth clerk on microphone'
+    - 'trains rumbling overhead/below'
+    - 'turnstile clicking'
+    - 'shoes on metal stairs echoing'
+  
+  bar:
+    - 'jukebox blaring over conversation'
+    - 'pool balls cracking'
+    - 'glasses clinking'
+    - 'bartender shaking cocktails'
+    - 'sports commentator on TV'
+    - 'people cheering at game'
+    - 'slot machine dinging'
+  
+  home:
+    - "neighbor's TV through thin walls"
+    - 'couple arguing upstairs'
+    - 'footsteps above'
+    - 'radiator clanking and hissing'
+    - 'car alarm outside window'
+    - 'dial-up modem connecting'
+    - 'phone ringing'
+    - 'answering machine beep'
+  
+  office:
+    - 'keyboards clacking'
+    - 'phones ringing constantly'
+    - 'fax machine beeping'
+    - 'printer jamming'
+    - 'elevator dinging'
+    - 'water cooler gurgling'
+    - 'whispered gossip'
+
+# ============================================================================
+# SLANG & SPEECH PATTERNS (1999)
+# ============================================================================
+common_slang_1999:
+  - 'all that and a bag of chips'
+  - 'as if!'
+  - 'boo-yah!'
+  - 'da bomb'
+  - 'duh'
+  - 'fly'
+  - 'gag me with a spoon'
+  - 'get jiggy with it'
+  - 'hella'
+  - 'home skillet'
+  - 'hot'
+  - 'my bad'
+  - 'not!'
+  - 'off the hook'
+  - 'phat'
+  - 'playa'
+  - 'props'
+  - 'psych!'
+  - 'radical'
+  - 'sweet'
+  - 'talk to the hand'
+  - 'tight'
+  - 'wassup'
+  - 'wack'
+  - 'whatever'
